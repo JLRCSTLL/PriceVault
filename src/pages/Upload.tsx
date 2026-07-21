@@ -10,7 +10,8 @@ import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { UploadCloud, FileType, CheckCircle, AlertCircle, X } from "lucide-react"
 import * as XLSX from "xlsx"
-import { mockPrices, PriceRecord } from "../store/data"
+import { createPriceRecord } from "../store/data"
+import type { PriceRecord } from "../types"
 
 interface ParsedRow {
   row: number
@@ -109,15 +110,41 @@ export function Upload() {
     reader.readAsBinaryString(selectedFile)
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      alert(`Successfully imported ${parsedRows.length} records!`)
+    try {
+      const today = new Date()
+      const expiryDate = new Date(today)
+      expiryDate.setDate(expiryDate.getDate() + 30)
+
+      const results = await Promise.all(
+        parsedRows.map(async (row) => {
+          return createPriceRecord({
+            itemNo: row.itemNo,
+            inventory: row.inventory,
+            description: row.description,
+            brand: row.brand,
+            model: row.model,
+            varPrice: row.varPrice,
+            srpPrice: row.srpPrice || 0,
+            quoteDate: today.toISOString(),
+            expiryDate: expiryDate.toISOString(),
+            status: "Active",
+          })
+        })
+      )
+
+      const successCount = results.filter((r) => r !== null).length
+      alert(`Successfully imported ${successCount} records!`)
       setFile(null)
       setParsedRows([])
       setShowPreview(false)
-    }, 1500)
+    } catch (error) {
+      console.error("Import error:", error)
+      alert("Failed to import records. Please try again.")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handleCancel = () => {

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -9,15 +9,28 @@ import {
 } from "../components/ui/table"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
-import { mockPrices, PriceStatus } from "../store/data"
+import { fetchPrices, PriceStatus, PriceRecord } from "../store/data"
 import { Search, Filter, ShoppingCart } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export function PriceList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<PriceStatus | "All">("All")
+  const [prices, setPrices] = useState<PriceRecord[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filtered = mockPrices.filter((p) => {
+  useEffect(() => {
+    loadPrices()
+  }, [])
+
+  const loadPrices = async () => {
+    setLoading(true)
+    const data = await fetchPrices()
+    setPrices(data)
+    setLoading(false)
+  }
+
+  const filtered = prices.filter((p) => {
     const matchesSearch =
       p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,6 +57,10 @@ export function PriceList() {
       default:
         return "default"
     }
+  }
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
   }
 
   return (

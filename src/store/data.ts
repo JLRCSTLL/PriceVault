@@ -1,135 +1,93 @@
-import { addDays, subDays } from "date-fns"
+import { supabase } from "../lib/supabase"
 
 export type PriceStatus = "Active" | "Expiring Soon" | "Expired" | "No Offer" | "EOL"
 
 export interface PriceRecord {
   id: string
-  itemNo: string
+  item_no: string
   inventory: string
   brand: string
   model: string
   description: string
   category: string
   uom: string
-  orderQty: number
-  varPrice: number
-  srpPrice: number
-  lpPrice: number
-  buyingPrice: number
-  stockAvailability: string
-  warrantyInformation: string
+  order_qty: number
+  var_price: number
+  srp_price: number
+  lp_price: number
+  buying_price: number
+  stock_availability: string
+  warranty_information: string
   remarks: string
-  quoteDate: string
-  expiryDate: string
+  quote_date: string
+  expiry_date: string
   status: PriceStatus
 }
 
-const today = new Date()
+export async function fetchPrices(): Promise<PriceRecord[]> {
+  const { data, error } = await supabase
+    .from("price_records")
+    .select("*")
+    .order("created_at", { ascending: false })
 
-export const mockPrices: PriceRecord[] = [
-  {
-    id: "1",
-    itemNo: "ITM-001",
-    inventory: "INV-100",
-    brand: "Epson",
-    model: "EB-L210W",
-    description: "Epson EB-L210W WXGA 3LCD Laser Projector",
-    category: "Projectors",
-    uom: "Unit",
-    orderQty: 1,
-    varPrice: 1200.0,
-    srpPrice: 1500.0,
-    lpPrice: 1100.0,
-    buyingPrice: 1000.0,
-    stockAvailability: "In Stock",
-    warrantyInformation: "3 Years",
-    remarks: "",
-    quoteDate: subDays(today, 10).toISOString(),
-    expiryDate: addDays(today, 20).toISOString(),
-    status: "Active",
-  },
-  {
-    id: "2",
-    itemNo: "ITM-002",
-    inventory: "INV-101",
-    brand: "Panasonic",
-    model: "PT-MZ682B",
-    description: "Panasonic PT-MZ682B LCD Laser Projector",
-    category: "Projectors",
-    uom: "Unit",
-    orderQty: 2,
-    varPrice: 2500.0,
-    srpPrice: 3000.0,
-    lpPrice: 2400.0,
-    buyingPrice: 2200.0,
-    stockAvailability: "Out of Stock",
-    warrantyInformation: "2 Years",
-    remarks: "",
-    quoteDate: subDays(today, 25).toISOString(),
-    expiryDate: addDays(today, 5).toISOString(),
-    status: "Expiring Soon",
-  },
-  {
-    id: "3",
-    itemNo: "ITM-003",
-    inventory: "INV-102",
-    brand: "DJI",
-    model: "Mavic 3",
-    description: "DJI Mavic 3 Pro Drone",
-    category: "Drones",
-    uom: "Unit",
-    orderQty: 1,
-    varPrice: 2100.0,
-    srpPrice: 2500.0,
-    lpPrice: 2000.0,
-    buyingPrice: 1800.0,
-    stockAvailability: "Pre-order",
-    warrantyInformation: "1 Year",
-    remarks: "",
-    quoteDate: subDays(today, 40).toISOString(),
-    expiryDate: subDays(today, 10).toISOString(),
-    status: "Expired",
-  },
-  {
-    id: "4",
-    itemNo: "ITM-004",
-    inventory: "INV-103",
-    brand: "Unknown",
-    model: "Legacy-X",
-    description: "Old Legacy System Part",
-    category: "Parts",
-    uom: "Piece",
-    orderQty: 5,
-    varPrice: 0,
-    srpPrice: 0,
-    lpPrice: 0,
-    buyingPrice: 0,
-    stockAvailability: "None",
-    warrantyInformation: "N/A",
-    remarks: "NO OFFER",
-    quoteDate: subDays(today, 60).toISOString(),
-    expiryDate: subDays(today, 30).toISOString(),
-    status: "No Offer",
-  },
-  {
-    id: "5",
-    itemNo: "ITM-005",
-    inventory: "INV-104",
-    brand: "Sony",
-    model: "VPL-PHZ60",
-    description: "Sony VPL-PHZ60 Laser Projector",
-    category: "Projectors",
-    uom: "Unit",
-    orderQty: 1,
-    varPrice: 0,
-    srpPrice: 0,
-    lpPrice: 0,
-    buyingPrice: 0,
-    stockAvailability: "Discontinued",
-    warrantyInformation: "N/A",
-    remarks: "EOL",
-    quoteDate: subDays(today, 100).toISOString(),
-    expiryDate: subDays(today, 70).toISOString(),
-    status: "EOL",
-  },
-]
+  if (error) {
+    console.error("Error fetching prices:", error)
+    return []
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    itemNo: row.item_no || "",
+    inventory: row.inventory,
+    brand: row.brand,
+    model: row.model,
+    description: row.description,
+    category: row.category || "",
+    uom: row.uom || "Unit",
+    orderQty: row.order_qty || 1,
+    varPrice: Number(row.var_price) || 0,
+    srpPrice: Number(row.srp_price) || 0,
+    lpPrice: Number(row.lp_price) || 0,
+    buyingPrice: Number(row.buying_price) || 0,
+    stockAvailability: row.stock_availability || "Unknown",
+    warrantyInformation: row.warranty_information || "",
+    remarks: row.remarks || "",
+    quoteDate: row.quote_date,
+    expiryDate: row.expiry_date,
+    status: (row.status as PriceStatus) || "Active",
+  }))
+}
+
+export async function createPriceRecord(record: Partial<PriceRecord>) {
+  const { data, error } = await supabase
+    .from("price_records")
+    .insert({
+      item_no: record.itemNo,
+      inventory: record.inventory,
+      brand: record.brand,
+      model: record.model,
+      description: record.description,
+      category: record.category,
+      uom: record.uom,
+      order_qty: record.orderQty,
+      var_price: record.varPrice,
+      srp_price: record.srpPrice,
+      lp_price: record.lpPrice,
+      buying_price: record.buyingPrice,
+      stock_availability: record.stockAvailability,
+      warranty_information: record.warrantyInformation,
+      remarks: record.remarks,
+      quote_date: record.quoteDate,
+      expiry_date: record.expiryDate,
+      status: record.status,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error creating price record:", error)
+    return null
+  }
+
+  return data
+}

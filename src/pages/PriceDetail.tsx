@@ -8,7 +8,8 @@ import {
 } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
-import { mockPrices } from "../store/data"
+import { fetchPrices } from "../store/data"
+import { useState, useEffect } from "react"
 import { ArrowLeft, ShoppingCart, TrendingUp } from "lucide-react"
 import {
   LineChart,
@@ -28,7 +29,24 @@ const historyData = [
 
 export function PriceDetail() {
   const { id } = useParams()
-  const price = mockPrices.find((p) => p.id === id)
+  const [price, setPrice] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadPrice()
+  }, [id])
+
+  const loadPrice = async () => {
+    setLoading(true)
+    const data = await fetchPrices()
+    const found = data.find((p) => p.id === id)
+    setPrice(found)
+    setLoading(false)
+  }
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
+  }
 
   if (!price) {
     return (

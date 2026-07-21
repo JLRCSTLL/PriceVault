@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
-import { mockPrices } from "../store/data"
+import { fetchPrices, PriceRecord } from "../store/data"
 import {
   BarChart,
   Bar,
@@ -13,13 +14,25 @@ import {
 import { PackageSearch, AlertTriangle, XCircle, Ban, Clock } from "lucide-react"
 
 export function Dashboard() {
-  const activeCount = mockPrices.filter((p) => p.status === "Active").length
-  const expiringCount = mockPrices.filter(
-    (p) => p.status === "Expiring Soon",
-  ).length
-  const expiredCount = mockPrices.filter((p) => p.status === "Expired").length
-  const noOfferCount = mockPrices.filter((p) => p.status === "No Offer").length
-  const eolCount = mockPrices.filter((p) => p.status === "EOL").length
+  const [prices, setPrices] = useState<PriceRecord[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadPrices()
+  }, [])
+
+  const loadPrices = async () => {
+    setLoading(true)
+    const data = await fetchPrices()
+    setPrices(data)
+    setLoading(false)
+  }
+
+  const activeCount = prices.filter((p) => p.status === "Active").length
+  const expiringCount = prices.filter((p) => p.status === "Expiring Soon").length
+  const expiredCount = prices.filter((p) => p.status === "Expired").length
+  const noOfferCount = prices.filter((p) => p.status === "No Offer").length
+  const eolCount = prices.filter((p) => p.status === "EOL").length
 
   const chartData = [
     { name: "Epson", requests: 12 },
@@ -28,6 +41,10 @@ export function Dashboard() {
     { name: "DJI", requests: 15 },
     { name: "Canon", requests: 5 },
   ]
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -156,7 +173,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockPrices
+              {prices
                 .filter(
                   (p) => p.status === "Expired" || p.status === "Expiring Soon",
                 )
