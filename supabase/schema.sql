@@ -122,37 +122,57 @@ alter table public.audit_logs enable row level security;
 alter table public.profiles enable row level security;
 
 -- Price records policies
+drop policy if exists "Allow public read access to price_records" on public.price_records;
 create policy "Allow public read access to price_records" on public.price_records for select using (true);
+drop policy if exists "Allow public insert to price_records" on public.price_records;
 create policy "Allow public insert to price_records" on public.price_records for insert with check (true);
+drop policy if exists "Allow public update to price_records" on public.price_records;
 create policy "Allow public update to price_records" on public.price_records for update using (true);
+drop policy if exists "Allow public delete to price_records" on public.price_records;
 create policy "Allow public delete to price_records" on public.price_records for delete using (true);
 
 -- Uploaded files policies
+drop policy if exists "Allow public read access to uploaded_files" on public.uploaded_files;
 create policy "Allow public read access to uploaded_files" on public.uploaded_files for select using (true);
+drop policy if exists "Allow public insert to uploaded_files" on public.uploaded_files;
 create policy "Allow public insert to uploaded_files" on public.uploaded_files for insert with check (true);
 
 -- Request cart items policies
+drop policy if exists "Allow public read access to request_cart_items" on public.request_cart_items;
 create policy "Allow public read access to request_cart_items" on public.request_cart_items for select using (true);
+drop policy if exists "Allow public insert to request_cart_items" on public.request_cart_items;
 create policy "Allow public insert to request_cart_items" on public.request_cart_items for insert with check (true);
+drop policy if exists "Allow public update to request_cart_items" on public.request_cart_items;
 create policy "Allow public update to request_cart_items" on public.request_cart_items for update using (true);
+drop policy if exists "Allow public delete to request_cart_items" on public.request_cart_items;
 create policy "Allow public delete to request_cart_items" on public.request_cart_items for delete using (true);
 
 -- Generated requests policies
+drop policy if exists "Allow public read access to generated_requests" on public.generated_requests;
 create policy "Allow public read access to generated_requests" on public.generated_requests for select using (true);
+drop policy if exists "Allow public insert to generated_requests" on public.generated_requests;
 create policy "Allow public insert to generated_requests" on public.generated_requests for insert with check (true);
 
 -- Markup predictions policies
+drop policy if exists "Allow public read access to markup_predictions" on public.markup_predictions;
 create policy "Allow public read access to markup_predictions" on public.markup_predictions for select using (true);
+drop policy if exists "Allow public insert to markup_predictions" on public.markup_predictions;
 create policy "Allow public insert to markup_predictions" on public.markup_predictions for insert with check (true);
 
 -- Audit logs policies
+drop policy if exists "Allow public read access to audit_logs" on public.audit_logs;
 create policy "Allow public read access to audit_logs" on public.audit_logs for select using (true);
+drop policy if exists "Allow public insert to audit_logs" on public.audit_logs;
 create policy "Allow public insert to audit_logs" on public.audit_logs for insert with check (true);
 
 -- Profiles policies
+drop policy if exists "Allow public read access to profiles" on public.profiles;
 create policy "Allow public read access to profiles" on public.profiles for select using (true);
+drop policy if exists "Allow public insert to profiles" on public.profiles;
 create policy "Allow public insert to profiles" on public.profiles for insert with check (true);
+drop policy if exists "Allow public update to profiles" on public.profiles;
 create policy "Allow public update to profiles" on public.profiles for update using (true);
+drop policy if exists "Allow public delete to profiles" on public.profiles;
 create policy "Allow public delete to profiles" on public.profiles for delete using (true);
 
 -- Create indexes
