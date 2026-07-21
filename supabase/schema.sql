@@ -55,6 +55,9 @@ create table if not exists public.request_cart_items (
   issue_status text default 'Requested',
   canceled boolean default false,
   project_id text,
+  project_task text,
+  requisition_ref_nbr text,
+  update text,
   created_at timestamp with time zone default now()
 );
 
@@ -98,6 +101,17 @@ create table if not exists public.audit_logs (
   created_at timestamp with time zone default now()
 );
 
+-- Profiles table for user roles and approval status
+create table if not exists public.profiles (
+  id uuid references auth.users(id) primary key,
+  email text,
+  full_name text,
+  role text default 'user',
+  status text default 'pending',
+  approved_at timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
 -- Enable Row Level Security
 alter table public.price_records enable row level security;
 alter table public.uploaded_files enable row level security;
@@ -105,35 +119,48 @@ alter table public.request_cart_items enable row level security;
 alter table public.generated_requests enable row level security;
 alter table public.markup_predictions enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.profiles enable row level security;
 
--- Create policies
+-- Price records policies
 create policy "Allow public read access to price_records" on public.price_records for select using (true);
 create policy "Allow public insert to price_records" on public.price_records for insert with check (true);
 create policy "Allow public update to price_records" on public.price_records for update using (true);
 create policy "Allow public delete to price_records" on public.price_records for delete using (true);
 
+-- Uploaded files policies
 create policy "Allow public read access to uploaded_files" on public.uploaded_files for select using (true);
 create policy "Allow public insert to uploaded_files" on public.uploaded_files for insert with check (true);
 
+-- Request cart items policies
 create policy "Allow public read access to request_cart_items" on public.request_cart_items for select using (true);
 create policy "Allow public insert to request_cart_items" on public.request_cart_items for insert with check (true);
 create policy "Allow public update to request_cart_items" on public.request_cart_items for update using (true);
 create policy "Allow public delete to request_cart_items" on public.request_cart_items for delete using (true);
 
+-- Generated requests policies
 create policy "Allow public read access to generated_requests" on public.generated_requests for select using (true);
 create policy "Allow public insert to generated_requests" on public.generated_requests for insert with check (true);
 
+-- Markup predictions policies
 create policy "Allow public read access to markup_predictions" on public.markup_predictions for select using (true);
 create policy "Allow public insert to markup_predictions" on public.markup_predictions for insert with check (true);
 
+-- Audit logs policies
 create policy "Allow public read access to audit_logs" on public.audit_logs for select using (true);
 create policy "Allow public insert to audit_logs" on public.audit_logs for insert with check (true);
 
--- Create indexes for better performance
+-- Profiles policies
+create policy "Allow public read access to profiles" on public.profiles for select using (true);
+create policy "Allow public insert to profiles" on public.profiles for insert with check (true);
+create policy "Allow public update to profiles" on public.profiles for update using (true);
+create policy "Allow public delete to profiles" on public.profiles for delete using (true);
+
+-- Create indexes
 create index if not exists idx_price_records_status on public.price_records(status);
 create index if not exists idx_price_records_brand on public.price_records(brand);
 create index if not exists idx_price_records_inventory on public.price_records(inventory);
 create index if not exists idx_price_records_expiry on public.price_records(expiry_date);
+create index if not exists idx_profiles_status on public.profiles(status);
 
 -- Insert sample data
 insert into public.price_records (item_no, inventory, brand, model, description, category, uom, var_price, srp_price, lp_price, buying_price, stock_availability, warranty_information, quote_date, expiry_date, status)

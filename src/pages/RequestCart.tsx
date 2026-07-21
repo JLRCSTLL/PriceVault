@@ -20,7 +20,7 @@ import * as XLSX from "xlsx"
 import { useCart } from "../store/cart"
 
 export function RequestCart() {
-  const { items, removeFromCart, updateQty, clearCart } = useCart()
+  const { items, removeFromCart, updateQty, updateItem, clearCart } = useCart()
 
   const handleGenerate = () => {
     const data = items.map((item) => ({
@@ -28,13 +28,16 @@ export function RequestCart() {
       Description: item.description,
       UOM: item.uom,
       "Order Qty.": item.orderQty,
-      "Est. Unit Cost": item.buyingPrice || item.varPrice,
-      "Est. Ext. Cost": (item.buyingPrice || item.varPrice) * item.orderQty,
-      "Required Date": "",
-      "Promised Date": "",
-      "Issue Status": "Requested",
-      Canceled: "FALSE",
+      "Est. Unit Cost": (item.buyingPrice || item.varPrice).toFixed(2),
+      "Est. Ext. Cost": ((item.buyingPrice || item.varPrice) * item.orderQty).toFixed(2),
+      "Required Date": item.requiredDate,
+      "Promised Date": item.promisedDate,
+      "Issue Status": item.issueStatus,
+      Canceled: item.canceled,
       "Project ID": item.projectId,
+      "Project Task": item.projectTask,
+      "Requisition Ref. Nbr.": item.requisitionRefNbr,
+      Update: "",
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(data)
@@ -80,10 +83,16 @@ export function RequestCart() {
                 <TableHead>Inventory</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="w-24">UOM</TableHead>
-                <TableHead className="w-32">Order Qty</TableHead>
+                <TableHead className="w-24">Order Qty.</TableHead>
                 <TableHead className="text-right">Est. Unit Cost</TableHead>
-                <TableHead className="text-right">Est. Ext Cost</TableHead>
+                <TableHead className="text-right">Est. Ext. Cost</TableHead>
+                <TableHead className="w-32">Required Date</TableHead>
+                <TableHead className="w-32">Promised Date</TableHead>
+                <TableHead>Issue Status</TableHead>
+                <TableHead>Canceled</TableHead>
                 <TableHead>Project ID</TableHead>
+                <TableHead>Project Task</TableHead>
+                <TableHead>Requisition Ref. Nbr.</TableHead>
                 <TableHead className="text-right w-16"></TableHead>
               </TableRow>
             </TableHeader>
@@ -115,9 +124,63 @@ export function RequestCart() {
                     </TableCell>
                     <TableCell>
                       <input
+                        type="date"
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.requiredDate}
+                        onChange={(e) => updateItem(item.id, { requiredDate: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <input
+                        type="date"
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.promisedDate}
+                        onChange={(e) => updateItem(item.id, { promisedDate: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.issueStatus}
+                        onChange={(e) => updateItem(item.id, { issueStatus: e.target.value })}
+                      >
+                        <option value="Requested">Requested</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.canceled}
+                        onChange={(e) => updateItem(item.id, { canceled: e.target.value })}
+                      >
+                        <option value="FALSE">FALSE</option>
+                        <option value="TRUE">TRUE</option>
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <input
                         type="text"
                         className="w-full h-8 border rounded px-2 text-sm"
                         defaultValue={item.projectId}
+                        onChange={(e) => updateItem(item.id, { projectId: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <input
+                        type="text"
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.projectTask}
+                        onChange={(e) => updateItem(item.id, { projectTask: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <input
+                        type="text"
+                        className="w-full h-8 border rounded px-2 text-sm"
+                        defaultValue={item.requisitionRefNbr}
+                        onChange={(e) => updateItem(item.id, { requisitionRefNbr: e.target.value })}
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -133,7 +196,7 @@ export function RequestCart() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={14} className="h-24 text-center">
                     Your cart is empty. Go to the Price List to add items.
                   </TableCell>
                 </TableRow>

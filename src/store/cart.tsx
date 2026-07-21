@@ -21,6 +21,12 @@ export interface CartItem {
   expiryDate: string
   status: string
   projectId: string
+  projectTask: string
+  requisitionRefNbr: string
+  requiredDate: string
+  promisedDate: string
+  issueStatus: string
+  canceled: string
 }
 
 interface CartContextType {
@@ -37,10 +43,19 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
 
-  const addToCart = (item: Omit<CartItem, "projectId">) => {
+  const addToCart = (item: Omit<CartItem, "projectId" | "projectTask" | "requisitionRefNbr" | "requiredDate" | "promisedDate" | "issueStatus" | "canceled">) => {
     setItems((prev) => {
       if (prev.find((i) => i.id === item.id)) return prev
-      return [...prev, { ...item, projectId: "" }]
+      return [...prev, { 
+        ...item, 
+        projectId: "",
+        projectTask: "",
+        requisitionRefNbr: "",
+        requiredDate: "",
+        promisedDate: "",
+        issueStatus: "Requested",
+        canceled: "FALSE",
+      }]
     })
   }
 
@@ -54,12 +69,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const updateItem = (id: string, updates: Partial<CartItem>) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+    )
+  }
+
   const clearCart = () => setItems([])
 
   const isInCart = (id: string) => items.some((i) => i.id === id)
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, clearCart, isInCart }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, updateItem, clearCart, isInCart }}>
       {children}
     </CartContext.Provider>
   )

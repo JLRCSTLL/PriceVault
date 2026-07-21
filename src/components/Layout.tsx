@@ -9,8 +9,11 @@ import {
   Settings,
   LogOut,
   Vault,
+  Users,
 } from "lucide-react"
 import { cn } from "../lib/utils"
+import { useAuth } from "../store/auth"
+import { Button } from "../components/ui/button"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -23,6 +26,8 @@ const navigation = [
 ]
 
 export function Layout() {
+  const { user, profile, signOut } = useAuth()
+
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Sidebar */}
@@ -52,14 +57,36 @@ export function Layout() {
                 </NavLink>
               </li>
             ))}
+            {profile?.role === "admin" && (
+              <li>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-sidebar-hover text-white"
+                        : "text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white",
+                    )
+                  }
+                >
+                  <Users className="h-4 w-4" />
+                  User Management
+                </NavLink>
+              </li>
+            )}
           </ul>
         </nav>
 
         <div className="p-4 border-t border-sidebar-hover">
-          <NavLink to="/login" className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white transition-colors">
-            <LogOut className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-sidebar-foreground hover:text-white hover:bg-sidebar-hover/50"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
             Logout
-          </NavLink>
+          </Button>
         </div>
       </div>
 
@@ -68,11 +95,11 @@ export function Layout() {
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 shrink-0">
           <h1 className="font-semibold text-lg text-foreground">
-            Welcome back, Admin
+            Welcome back, {profile?.full_name || user?.email || "User"}
           </h1>
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-              A
+              {(profile?.full_name || user?.email || "U").charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
