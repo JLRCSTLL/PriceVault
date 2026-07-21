@@ -90,8 +90,17 @@ export function Upload() {
           return
         }
 
-        const headerRow = raw[0].map((h: any) => String(h ?? "").trim().toLowerCase())
-        const dataRows = raw.slice(1)
+        const headerRowIndex = raw.findIndex((row) => {
+          const values = row.map((v) => String(v ?? "").trim().toLowerCase())
+          return values.some((v) => /item\s*no\.?|inventory|description|var|srp|lp|stock/i.test(v))
+        })
+
+        const dataStartIndex = headerRowIndex >= 0 ? headerRowIndex + 1 : 1
+        const headerRow = (raw[headerRowIndex] || raw[0]).map((h: any) => String(h ?? "").trim().toLowerCase())
+        const dataRows = raw.slice(dataStartIndex)
+
+        console.log("Upload headers:", headerRow)
+        console.log("Upload sample row:", dataRows[0])
 
         const col = (names: string[]) => {
           for (const name of names) {
