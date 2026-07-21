@@ -132,7 +132,7 @@ export function Upload() {
           const uom = String(row[uomIdx] || "Unit").trim()
           const stockAvailability = String(row[stockIdx] || "Unknown").trim()
 
-          const knownBrands = /(LENOVO|VENTION|Yamaha|TRUEVISION|Lemorele|BOSE|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba|3M|Belkin|StarTech|Kensington|Targus|Logitech|Razer|Corsair|HyperX|SteelSeries)/i
+          const knownBrands = /(LENOVO|VENTION|Yamaha|TRUEVISION|Lemorele|BOSE|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba|3M|Belkin|StarTech|Kensington|Targus|Logitech|Razer|Corsair|HyperX|SteelSeries|EOS|CANON|EPSON|PACK|Hosa|ORICO|Manfrotto|RH2A|ELGATO|UGreen|Ugreen)/i
           const brandMatch = description.match(knownBrands)
           const brand = brandMatch ? brandMatch[0] : description.split(/\s+/)[0]
           
@@ -143,14 +143,27 @@ export function Upload() {
           if (fruMatch) {
             model = fruMatch[1]
           } else {
-            const firstToken = afterBrand.split(/\s+/)[0]
-            if (firstToken) {
-              model = firstToken.replace(/[^A-Za-z0-9\-./]/g, "")
+            const tokens = afterBrand.split(/\s+/)
+            const modelToken = tokens.find((token) => {
+              const cleaned = token.replace(/[^A-Za-z0-9\-.]/g, "")
+              if (!cleaned) return false
+              if (cleaned.length < 2) return false
+              if (/^(the|and|for|with|of|in|on|at|to|a|an|is|it|he|she|we|you|me|him|her|us|them|this|that|these|those|i|we|you|he|she|it|they|my|your|his|its|our|their|what|which|who|when|where|why|how|all|each|every|both|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now|d|ll|m|re|ve|y|t|s|st|nd|rd|th)$/i.test(cleaned)) return false
+              return /[A-Za-z]/.test(cleaned) && /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
+            })
+            
+            if (modelToken) {
+              model = modelToken.replace(/[^A-Za-z0-9\-.]/g, "")
+            } else if (tokens.length > 0) {
+              const first = tokens[0].replace(/[^A-Za-z0-9\-.]/g, "")
+              if (first && first.length >= 2 && !/^(the|and|for|with|of|in|on|at|to|a|an|is|it)$/i.test(first)) {
+                model = first
+              }
             }
           }
           
           if (!model || model === "Unknown") {
-            const fallbackMatch = description.match(/([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?|DM3|HS8|DM6C|P2600A|R1030|TV12-610TW|TesiraFORTÉ\s*AI)/i)
+            const fallbackMatch = description.match(/([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?|DM3|HS8|DM6C|P2600A|R1030|TV12-610TW|TesiraFORTÉ\s*AI|FX30|LQ-2190|EB-L210W|PT-MZ682B|PT-MZ682W|ET-ELW20|L3350|L15150|590II|LP-E10|VE7832A|VE7835A|VE7834A|MM105)/i)
             if (fallbackMatch) {
               model = fallbackMatch[1]
             }
