@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
+import { fetchSettings, saveSetting } from "../store/data"
 
 interface Brand {
   id: string
@@ -15,25 +16,37 @@ interface Category {
 }
 
 export function Settings() {
-  const [brands, setBrands] = useState<Brand[]>([
-    { id: "1", name: "Epson" },
-    { id: "2", name: "Panasonic" },
-    { id: "3", name: "Sony" },
-    { id: "4", name: "DJI" },
-    { id: "5", name: "Canon" },
-  ])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [newBrand, setNewBrand] = useState("")
-
-  const [categories, setCategories] = useState<Category[]>([
-    { id: "1", name: "Projectors" },
-    { id: "2", name: "Drones" },
-    { id: "3", name: "Cables" },
-    { id: "4", name: "Displays" },
-    { id: "5", name: "Accessories" },
-  ])
+  const [categories, setCategories] = useState<Category[]>([])
   const [newCategory, setNewCategory] = useState("")
-
   const [validityDays, setValidityDays] = useState(30)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
+  const loadSettings = async () => {
+    setLoading(true)
+    const settings = await fetchSettings()
+    if (settings.brands) setBrands(settings.brands)
+    if (settings.categories) setCategories(settings.categories)
+    if (settings.validityDays) setValidityDays(settings.validityDays)
+    setLoading(false)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    await Promise.all([
+      saveSetting("brands", brands),
+      saveSetting("categories", categories),
+      saveSetting("validityDays", validityDays),
+    ])
+    setSaving(false)
+    alert("Settings saved!")
+  }
 
   const addBrand = () => {
     if (!newBrand.trim()) return
@@ -53,6 +66,10 @@ export function Settings() {
 
   const removeCategory = (id: string) => {
     setCategories(categories.filter((c) => c.id !== id))
+  }
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
   }
 
   return (
@@ -156,7 +173,9 @@ export function Settings() {
                 days from quote date
               </span>
             </div>
-            <Button>Save Settings</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Settings"}
+            </Button>
           </CardContent>
         </Card>
       </div>

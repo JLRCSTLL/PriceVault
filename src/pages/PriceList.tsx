@@ -10,8 +10,9 @@ import {
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { fetchPrices, deletePriceRecord, PriceStatus, PriceRecord } from "../store/data"
-import { Search, Filter, ShoppingCart, Trash2 } from "lucide-react"
+import { Search, ShoppingCart, Trash2 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useCart } from "../store/cart"
 
 export function PriceList() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -19,6 +20,7 @@ export function PriceList() {
   const [prices, setPrices] = useState<PriceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const { addToCart, removeFromCart, updateQty, items: cartItems } = useCart()
 
   useEffect(() => {
     loadPrices()
@@ -191,19 +193,19 @@ export function PriceList() {
                       />
                     </TableCell>
                      <Link to={`/prices/${price.id}`} className="contents">
+                        <TableCell className="font-medium">
+                         {price.itemNo}
+                       </TableCell>
                        <TableCell className="font-medium">
-                        {price.itemNo}
-                      </TableCell>
-                      <TableCell className="font-medium">
                         {price.inventory}
-                      </TableCell>
-                      <TableCell>
+                       </TableCell>
+                       <TableCell>
                         {price.brand}
-                      </TableCell>
-                      <TableCell>
+                       </TableCell>
+                       <TableCell>
                         {price.model}
-                      </TableCell>
-                      <TableCell
+                       </TableCell>
+                       <TableCell
                         className="max-w-[250px] truncate"
                         title={price.description}
                       >
@@ -245,13 +247,44 @@ export function PriceList() {
                           {price.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.preventDefault()}>
-                        <Button size="sm" variant="outline" className="h-8">
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Add to Cart
-                        </Button>
-                      </TableCell>
-                    </Link>
+                     </Link>
+                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         className="h-8"
+                         onClick={() => {
+                           if (cartItems.find((c) => c.id === price.id)) {
+                             removeFromCart(price.id)
+                           } else {
+                             addToCart({
+                               id: price.id,
+                               itemNo: price.itemNo,
+                               inventory: price.inventory,
+                               description: price.description,
+                               brand: price.brand,
+                               model: price.model,
+                               category: price.category,
+                               uom: price.uom,
+                               orderQty: price.orderQty,
+                               varPrice: price.varPrice,
+                               srpPrice: price.srpPrice,
+                               lpPrice: price.lpPrice,
+                               buyingPrice: price.buyingPrice,
+                               stockAvailability: price.stockAvailability,
+                               warrantyInformation: price.warrantyInformation,
+                               remarks: price.remarks,
+                               quoteDate: price.quoteDate,
+                               expiryDate: price.expiryDate,
+                               status: price.status,
+                             })
+                           }
+                         }}
+                       >
+                         <ShoppingCart className="mr-2 h-4 w-4" />
+                         {cartItems.find((c) => c.id === price.id) ? "Remove" : "Add to Cart"}
+                       </Button>
+                     </TableCell>
                   </TableRow>
                 ))
               ) : (

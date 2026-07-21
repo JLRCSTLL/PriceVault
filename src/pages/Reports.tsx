@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -18,24 +19,59 @@ import {
 } from "recharts"
 import { Badge } from "../components/ui/badge"
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react"
+import { fetchPrices, fetchGeneratedRequests } from "../store/data"
 
 export function Reports() {
-  const markupData = [
-    { category: "Projectors", var: 20, srp: 40, lp: 30 },
-    { category: "Drones", var: 15, srp: 25, lp: 20 },
-    { category: "Cables", var: 45, srp: 80, lp: 60 },
-    { category: "Displays", var: 18, srp: 35, lp: 25 },
-    { category: "Accessories", var: 30, srp: 50, lp: 40 },
-  ]
+  const [prices, setPrices] = useState<any[]>([])
+  const [requests, setRequests] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const historyData = [
-    { month: "Jan", requests: 45 },
-    { month: "Feb", requests: 52 },
-    { month: "Mar", requests: 38 },
-    { month: "Apr", requests: 65 },
-    { month: "May", requests: 48 },
-    { month: "Jun", requests: 59 },
-  ]
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    setLoading(true)
+    const [priceData, requestData] = await Promise.all([fetchPrices(), fetchGeneratedRequests()])
+    setPrices(priceData)
+    setRequests(requestData)
+    setLoading(false)
+  }
+
+  const totalActive = prices.filter((p) => p.status === "Active").length
+  const totalExpired = prices.filter((p) => p.status === "Expired").length
+  const totalValue = prices.reduce((sum, p) => sum + (p.varPrice || 0), 0)
+
+  const brandData = prices.reduce<Record<string, number>>((acc, p) => {
+    acc[p.brand] = (acc[p.brand] || 0) + 1
+    return acc
+  }, {})
+  const brandChartData = Object.entries(brandData)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+
+  const categoryData = prices.reduce<Record<string, number>>((acc, p) => {
+    const cat = p.category || "Uncategorized"
+    acc[cat] = (acc[cat] || 0) + 1
+    return acc
+  }, {})
+  const categoryChartData = Object.entries(categoryData)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+
+  const monthlyData = requests.reduce<Record<string, number>>((acc, req) => {
+    const month = new Date(req.generated_at).toLocaleString("default", { month: "short" })
+    acc[month] = (acc[month] || 0) + 1
+    return acc
+  }, {})
+  const monthlyChartData = Object.entries(monthlyData)
+    .map(([month, requests]) => ({ month, requests }))
+    .slice(-6)
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -52,14 +88,16 @@ export function Reports() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Avg VAR Markup
+              Active Prices
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">25.6%</div>
+            <div className="text-2xl font-bold text-emerald-600">
+              {totalActive}
+            </div>
             <p className="text-xs text-muted-foreground">
-              +2.1% from last month
+              Valid for &lt; 30 days
             </p>
           </CardContent>
         </Card>
@@ -67,28 +105,30 @@ export function Reports() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Avg SRP Markup
+              Expired Prices
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">46.0%</div>
-            <p className="text-xs text-muted-foreground">
-              +1.2% from last month
-            </p>
+            <div className="text-2xl font-bold text-red-600">
+              {totalExpired}
+            </div>
+            <p className="text-xs text-muted-foreground">Needs new request</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Volume Value
+              Total VAR Value
             </CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1.2M</div>
-            <p className="text-xs text-muted-foreground">Valid active prices</p>
+            <div className="text-2xl font-bold">
+              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground">Active prices value</p>
           </CardContent>
         </Card>
       </div>
@@ -96,22 +136,22 @@ export function Reports() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Historical Markup by Category (%)</CardTitle>
+            <CardTitle>Prices by Brand</CardTitle>
             <CardDescription>
-              Average markup percentage comparison.
+              Number of price records per brand.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={markupData}>
+                <BarChart data={brandChartData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
                     stroke="#E2E8F0"
                   />
                   <XAxis
-                    dataKey="category"
+                    dataKey="name"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#64748B" }}
@@ -129,16 +169,10 @@ export function Reports() {
                     }}
                   />
                   <Bar
-                    dataKey="var"
-                    name="VAR Markup"
+                    dataKey="count"
+                    name="Prices"
                     fill="#0D9488"
-                    radius={[2, 2, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="srp"
-                    name="SRP Markup"
-                    fill="#0EA5E9"
-                    radius={[2, 2, 0, 0]}
+                    radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -156,7 +190,7 @@ export function Reports() {
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historyData}>
+                <LineChart data={monthlyChartData.length > 0 ? monthlyChartData : [{ month: "No data", requests: 0 }]}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}

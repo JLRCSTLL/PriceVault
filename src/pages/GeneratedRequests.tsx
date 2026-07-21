@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -17,40 +17,41 @@ import {
   TableRow,
 } from "../components/ui/table"
 import { FileDown, Trash2 } from "lucide-react"
+import { fetchGeneratedRequests, deleteGeneratedRequest } from "../store/data"
 
 interface GeneratedRequest {
   id: string
-  fileName: string
-  generatedAt: string
-  generatedBy: string
-  itemCount: number
-  status: "Pending" | "Sent" | "Completed"
+  request_number: string
+  generated_by: string
+  generated_at: string
+  file_path: string
+  status: string
+  item_count: number
 }
 
-const initialRequests: GeneratedRequest[] = [
-  {
-    id: "1",
-    fileName: "Request-2024-001.xlsx",
-    generatedAt: "2024-06-15T10:30:00Z",
-    generatedBy: "Admin",
-    itemCount: 12,
-    status: "Completed",
-  },
-  {
-    id: "2",
-    fileName: "Request-2024-002.xlsx",
-    generatedAt: "2024-06-20T14:00:00Z",
-    generatedBy: "Admin",
-    itemCount: 8,
-    status: "Pending",
-  },
-]
-
 export function GeneratedRequests() {
-  const [requests, setRequests] = useState<GeneratedRequest[]>(initialRequests)
+  const [requests, setRequests] = useState<GeneratedRequest[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleDelete = (id: string) => {
-    setRequests(requests.filter((r) => r.id !== id))
+  useEffect(() => {
+    loadRequests()
+  }, [])
+
+  const loadRequests = async () => {
+    setLoading(true)
+    const data = await fetchGeneratedRequests()
+    setRequests(data)
+    setLoading(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this request?")) return
+    await deleteGeneratedRequest(id)
+    loadRequests()
+  }
+
+  const handleDownload = (req: GeneratedRequest) => {
+    alert(`Downloading ${req.request_number}`)
   }
 
   const getStatusVariant = (status: string) => {
@@ -64,6 +65,10 @@ export function GeneratedRequests() {
       default:
         return "default"
     }
+  }
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>
   }
 
   return (
@@ -101,14 +106,14 @@ export function GeneratedRequests() {
                 requests.map((req) => (
                   <TableRow key={req.id}>
                     <TableCell className="font-medium">
-                      {req.fileName}
+                      {req.request_number}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
-                      {new Date(req.generatedAt).toLocaleString()}
+                      {new Date(req.generated_at).toLocaleString()}
                     </TableCell>
-                    <TableCell>{req.generatedBy}</TableCell>
+                    <TableCell>{req.generated_by || "System"}</TableCell>
                     <TableCell className="text-right">
-                      {req.itemCount}
+                      {req.item_count}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(req.status)}>
@@ -117,7 +122,7 @@ export function GeneratedRequests() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleDownload(req)}>
                           <FileDown className="h-4 w-4 mr-1" />
                           Download
                         </Button>

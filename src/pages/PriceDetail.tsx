@@ -20,6 +20,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+import { useCart } from "../store/cart"
 
 const historyData = [
   { date: "2024-01", var: 1200, srp: 1500 },
@@ -31,6 +32,7 @@ export function PriceDetail() {
   const { id } = useParams()
   const [price, setPrice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const { addToCart, removeFromCart, items: cartItems } = useCart()
 
   useEffect(() => {
     loadPrice()
@@ -90,6 +92,8 @@ export function PriceDetail() {
     lp: price.buyingPrice ? ((price.lpPrice - price.buyingPrice) / price.buyingPrice) * 100 : 0,
   }
 
+  const inCart = cartItems.some((c) => c.id === price.id)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -108,12 +112,39 @@ export function PriceDetail() {
             {price.brand} - {price.description}
           </p>
         </div>
-        {["Expired", "No Offer"].includes(price.status) && (
-          <Button>
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-        )}
+        <Button
+          variant={inCart ? "secondary" : "default"}
+          onClick={() => {
+            if (inCart) {
+              removeFromCart(price.id)
+            } else {
+              addToCart({
+                id: price.id,
+                itemNo: price.itemNo,
+                inventory: price.inventory,
+                description: price.description,
+                brand: price.brand,
+                model: price.model,
+                category: price.category,
+                uom: price.uom,
+                orderQty: price.orderQty,
+                varPrice: price.varPrice,
+                srpPrice: price.srpPrice,
+                lpPrice: price.lpPrice,
+                buyingPrice: price.buyingPrice,
+                stockAvailability: price.stockAvailability,
+                warrantyInformation: price.warrantyInformation,
+                remarks: price.remarks,
+                quoteDate: price.quoteDate,
+                expiryDate: price.expiryDate,
+                status: price.status,
+              })
+            }
+          }}
+        >
+          <ShoppingCart className="mr-2 h-4 w-4" />
+          {inCart ? "Remove from Cart" : "Add to Cart"}
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

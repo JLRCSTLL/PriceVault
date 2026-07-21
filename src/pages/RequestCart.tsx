@@ -17,59 +17,19 @@ import {
 } from "../components/ui/table"
 import { FileDown, Trash2 } from "lucide-react"
 import * as XLSX from "xlsx"
-
-interface CartItem {
-  id: string
-  inventory: string
-  description: string
-  uom: string
-  orderQty: number
-  estUnitCost: number
-  projectId: string
-}
+import { useCart } from "../store/cart"
 
 export function RequestCart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: "3",
-      inventory: "INV-102",
-      description: "DJI Mavic 3 Pro Drone",
-      uom: "Unit",
-      orderQty: 1,
-      estUnitCost: 1800.0,
-      projectId: "PRJ-Alpha",
-    },
-    {
-      id: "4",
-      inventory: "INV-103",
-      description: "Old Legacy System Part",
-      uom: "Piece",
-      orderQty: 5,
-      estUnitCost: 0,
-      projectId: "PRJ-Beta",
-    },
-  ])
-
-  const handleRemove = (id: string) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
-  }
-
-  const handleUpdateQty = (id: string, qty: number) => {
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, orderQty: qty } : item,
-      ),
-    )
-  }
+  const { items, removeFromCart, updateQty, clearCart } = useCart()
 
   const handleGenerate = () => {
-    const data = cartItems.map((item) => ({
+    const data = items.map((item) => ({
       Inventory: item.inventory,
       Description: item.description,
       UOM: item.uom,
       "Order Qty.": item.orderQty,
-      "Est. Unit Cost": item.estUnitCost,
-      "Est. Ext. Cost": item.estUnitCost * item.orderQty,
+      "Est. Unit Cost": item.buyingPrice || item.varPrice,
+      "Est. Ext. Cost": (item.buyingPrice || item.varPrice) * item.orderQty,
       "Required Date": "",
       "Promised Date": "",
       "Issue Status": "Requested",
@@ -92,15 +52,22 @@ export function RequestCart() {
             Review expired or missing items before generating a request.
           </p>
         </div>
-        <Button onClick={handleGenerate} disabled={cartItems.length === 0}>
-          <FileDown className="mr-2 h-4 w-4" />
-          Generate Excel
-        </Button>
+        <div className="flex gap-2">
+          {items.length > 0 && (
+            <Button variant="outline" onClick={clearCart}>
+              Clear Cart
+            </Button>
+          )}
+          <Button onClick={handleGenerate} disabled={items.length === 0}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Generate Excel
+          </Button>
+        </div>
       </div>
 
       <Card className="flex-1 flex flex-col overflow-hidden">
         <CardHeader>
-          <CardTitle>Items to Request ({cartItems.length})</CardTitle>
+          <CardTitle>Items to Request ({items.length})</CardTitle>
           <CardDescription>
             These items will be included in the generated Excel form for Admin
             pricing.
@@ -121,8 +88,8 @@ export function RequestCart() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cartItems.length > 0 ? (
-                cartItems.map((item) => (
+              {items.length > 0 ? (
+                items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.inventory}
@@ -135,16 +102,16 @@ export function RequestCart() {
                         className="w-16 h-8 border rounded px-2 text-sm"
                         value={item.orderQty}
                         onChange={(e) =>
-                          handleUpdateQty(item.id, Number(e.target.value))
+                          updateQty(item.id, Number(e.target.value))
                         }
                         min="1"
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      ${item.estUnitCost.toFixed(2)}
+                      {(item.buyingPrice || item.varPrice).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${(item.estUnitCost * item.orderQty).toFixed(2)}
+                      {((item.buyingPrice || item.varPrice) * item.orderQty).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <input
@@ -157,7 +124,7 @@ export function RequestCart() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRemove(item.id)}
+                        onClick={() => removeFromCart(item.id)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
@@ -167,8 +134,7 @@ export function RequestCart() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
-                    Your cart is empty. Go to the Price List to add expired
-                    items.
+                    Your cart is empty. Go to the Price List to add items.
                   </TableCell>
                 </TableRow>
               )}

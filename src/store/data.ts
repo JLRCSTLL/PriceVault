@@ -102,3 +102,72 @@ export async function deletePriceRecord(id: string) {
 
   return true
 }
+
+export async function fetchGeneratedRequests() {
+  const { data, error } = await supabase
+    .from("generated_requests")
+    .select("*")
+    .order("generated_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching generated requests:", error)
+    return []
+  }
+
+  return data || []
+}
+
+export async function createGeneratedRequest(request: any) {
+  const { data, error } = await supabase
+    .from("generated_requests")
+    .insert(request)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error creating generated request:", error)
+    return null
+  }
+
+  return data
+}
+
+export async function deleteGeneratedRequest(id: string) {
+  const { error } = await supabase.from("generated_requests").delete().eq("id", id)
+
+  if (error) {
+    console.error("Error deleting generated request:", error)
+    return false
+  }
+
+  return true
+}
+
+export async function fetchSettings() {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+
+  if (error) {
+    console.error("Error fetching settings:", error)
+    return {}
+  }
+
+  return data?.reduce((acc: Record<string, any>, row: any) => {
+    acc[row.key] = row.value
+    return acc
+  }, {}) || {}
+}
+
+export async function saveSetting(key: string, value: any) {
+  const { error } = await supabase
+    .from("settings")
+    .upsert({ key, value })
+
+  if (error) {
+    console.error("Error saving setting:", error)
+    return false
+  }
+
+  return true
+}
