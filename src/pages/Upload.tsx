@@ -160,6 +160,11 @@ export function Upload() {
             uom,
             stockAvailability,
           }
+        }).filter((row) => {
+          if (!row.description || row.description.length < 3) return false
+          if (row.varPrice <= 0 && row.srpPrice <= 0 && row.lpPrice <= 0) return false
+          if (/this part is to be fill-up|for bidding and price tagging|end-user|contact person|designation|contact number|email address|website|project name|timeline of closing|estimated budget/i.test(row.description)) return false
+          return true
         })
 
         setParsedRows(rows)
