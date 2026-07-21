@@ -83,15 +83,44 @@ export function Upload() {
         const workbook = XLSX.read(data, { type: "binary" })
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
-        const json = XLSX.utils.sheet_to_json<any>(worksheet, { defval: "" })
+        const raw = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "" })
 
-        const rows: ParsedRow[] = json.map((row, index) => {
-          const description = String(row.Description || row["Description"] || row.description || "")
-          const itemNo = String(row["Item No."] || row.itemNo || `ROW-${index + 2}`)
-          const inventory = String(row.Inventory || row.inventory || `INV-${index + 2}`)
-          const varPrice = Number(row["VAR/PER UNIT"] || row.varPrice || row["VAR Price"] || 0)
-          const srpPrice = Number(row["SRP/PER UNIT"] || row.srpPrice || row["SRP Price"] || 0)
-          const lpPrice = Number(row["LP/PER UNIT"] || row.lpPrice || row["LP Price"] || 0)
+        if (!raw || raw.length === 0) {
+          alert("Excel file appears to be empty.")
+          return
+        }
+
+        const headerRow = raw[0].map((h: any) => String(h ?? "").trim().toLowerCase())
+        const dataRows = raw.slice(1)
+
+        const col = (names: string[]) => {
+          for (const name of names) {
+            const idx = headerRow.findIndex((h) => h === name.toLowerCase())
+            if (idx !== -1) return idx
+          }
+          return -1
+        }
+
+        const itemNoIdx = col(["item no.", "itemno", "item_no"])
+        const inventoryIdx = col(["inventory", "inventory no", "inventory_no"])
+        const descriptionIdx = col(["description", "desc", "item description"])
+        const varPriceIdx = col(["var/per unit", "var_price", "varprice", "var"])
+        const srpPriceIdx = col(["srp/per unit", "srp_price", "srpprice", "srp"])
+        const lpPriceIdx = col(["lp/per unit", "lp_price", "lpprice", "lp"])
+        const orderQtyIdx = col(["order qty.", "order_qty", "orderqty", "qty"])
+        const uomIdx = col(["uom", "unit"])
+        const stockIdx = col(["stock availability", "stock_availability", "stockavailability"])
+
+        const rows: ParsedRow[] = dataRows.map((row, index) => {
+          const description = String(row[descriptionIdx] ?? "").trim()
+          const itemNo = String(row[itemNoIdx] ?? `ROW-${index + 2}`).trim()
+          const inventory = String(row[inventoryIdx] ?? `INV-${index + 2}`).trim()
+          const varPrice = Number(row[varPriceIdx] || 0)
+          const srpPrice = Number(row[srpPriceIdx] || 0)
+          const lpPrice = Number(row[lpPriceIdx] || 0)
+          const orderQty = Number(row[orderQtyIdx] || 1)
+          const uom = String(row[uomIdx] || "Unit").trim()
+          const stockAvailability = String(row[stockIdx] || "Unknown").trim()
 
           const brandMatch = description.match(/(LENOVO|VENTION|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba)/i)
           const brand = brandMatch ? brandMatch[0] : "Unknown"
@@ -117,9 +146,9 @@ export function Upload() {
             lpPrice,
             brand,
             model,
-            orderQty: Number(row["Order Qty."] || row.orderQty || 1),
-            uom: String(row.UOM || row.uom || "Unit"),
-            stockAvailability: String(row["Stock Availability"] || row.stockAvailability || "Unknown"),
+            orderQty,
+            uom,
+            stockAvailability,
           }
         })
 
