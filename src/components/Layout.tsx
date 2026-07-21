@@ -10,10 +10,12 @@ import {
   LogOut,
   Vault,
   Users,
+  Shield,
 } from "lucide-react"
 import { cn } from "../lib/utils"
 import { useAuth } from "../store/auth"
 import { Button } from "../components/ui/button"
+import { Badge } from "../components/ui/badge"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -94,9 +96,17 @@ export function Layout() {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 shrink-0">
-          <h1 className="font-semibold text-lg text-foreground">
-            Welcome back, {profile?.full_name || user?.email || "User"}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-semibold text-lg text-foreground">
+              Welcome back, {profile?.full_name || user?.email || "User"}
+            </h1>
+            {profile?.role === "admin" && (
+              <Badge variant="active" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                Admin
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
               {(profile?.full_name || user?.email || "U").charAt(0).toUpperCase()}
