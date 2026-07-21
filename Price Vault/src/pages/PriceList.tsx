@@ -11,6 +11,7 @@ import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { mockPrices, PriceStatus } from "../store/data"
 import { Search, Filter, ShoppingCart } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export function PriceList() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -101,48 +102,50 @@ export function PriceList() {
             <TableBody>
               {filtered.length > 0 ? (
                 filtered.map((price) => (
-                  <TableRow key={price.id}>
-                    <TableCell className="font-medium">
-                      {price.inventory}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground">
-                          {price.model}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {price.brand}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      className="max-w-[200px] truncate"
-                      title={price.description}
-                    >
-                      {price.description}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${price.varPrice.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${price.srpPrice.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getBadgeVariant(price.status)}>
-                        {price.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {new Date(price.expiryDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {["Expired", "No Offer"].includes(price.status) && (
-                        <Button size="sm" variant="outline" className="h-8">
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Add to Cart
-                        </Button>
-                      )}
-                    </TableCell>
+                  <TableRow key={price.id} className="cursor-pointer">
+                    <Link to={`/prices/${price.id}`} className="contents">
+                      <TableCell className="font-medium">
+                        {price.inventory}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-foreground">
+                            {price.model}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {price.brand}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className="max-w-[200px] truncate"
+                        title={price.description}
+                      >
+                        {price.description}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${price.varPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${price.srpPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getBadgeVariant(price.status)}>
+                          {price.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(price.expiryDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.preventDefault()}>
+                        {["Expired", "No Offer"].includes(price.status) && (
+                          <Button size="sm" variant="outline" className="h-8">
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            Add to Cart
+                          </Button>
+                        )}
+                      </TableCell>
+                    </Link>
                   </TableRow>
                 ))
               ) : (

@@ -16,9 +16,20 @@ import {
   TableRow,
 } from "../components/ui/table"
 import { FileDown, Trash2 } from "lucide-react"
+import * as XLSX from "xlsx"
+
+interface CartItem {
+  id: string
+  inventory: string
+  description: string
+  uom: string
+  orderQty: number
+  estUnitCost: number
+  projectId: string
+}
 
 export function RequestCart() {
-  const [cartItems, setCartItems] = useState([
+  const [cartItems, setCartItems] = useState<CartItem[]>([
     {
       id: "3",
       inventory: "INV-102",
@@ -52,7 +63,24 @@ export function RequestCart() {
   }
 
   const handleGenerate = () => {
-    alert("Generating Excel Request Form...")
+    const data = cartItems.map((item) => ({
+      Inventory: item.inventory,
+      Description: item.description,
+      UOM: item.uom,
+      "Order Qty.": item.orderQty,
+      "Est. Unit Cost": item.estUnitCost,
+      "Est. Ext. Cost": item.estUnitCost * item.orderQty,
+      "Required Date": "",
+      "Promised Date": "",
+      "Issue Status": "Requested",
+      Canceled: "FALSE",
+      "Project ID": item.projectId,
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(data)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Request Form")
+    XLSX.writeFile(workbook, `Request-Form-${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
   return (

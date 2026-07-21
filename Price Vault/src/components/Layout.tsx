@@ -56,10 +56,10 @@ export function Layout() {
         </nav>
 
         <div className="p-4 border-t border-sidebar-hover">
-          <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white transition-colors">
+          <NavLink to="/login" className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white transition-colors">
             <LogOut className="h-4 w-4" />
             Logout
-          </button>
+          </NavLink>
         </div>
       </div>
 
