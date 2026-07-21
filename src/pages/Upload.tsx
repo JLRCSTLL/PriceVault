@@ -154,20 +154,20 @@ export function Upload() {
             })
             
             if (meaningfulTokens.length >= 2) {
-              model = `${meaningfulTokens[0]} ${meaningfulTokens[1]}`.replace(/[^A-Za-z0-9\-.\s]/g, "").trim()
+              model = `${meaningfulTokens[0]} ${meaningfulTokens[1]}`.replace(/[^A-Za-z0-9\-./\s]/g, "").trim()
             } else if (meaningfulTokens.length === 1) {
-              model = meaningfulTokens[0].replace(/[^A-Za-z0-9\-.]/g, "")
+              model = meaningfulTokens[0].replace(/[^A-Za-z0-9\-./]/g, "")
             }
           }
           
-          if (model === "Unknown") {
-            const fallbackMatch = description.match(/([A-Z0-9]{2,}(?:-[A-Z0-9]+)+)/)
-            if (fallbackMatch) {
-              model = fallbackMatch[1]
-            }
-          }
+           if (model === "Unknown") {
+             const fallbackMatch = description.match(/([A-Z0-9]{2,}(?:-[A-Z0-9]+)+)/)
+             if (fallbackMatch) {
+               model = fallbackMatch[1]
+             }
+           }
 
-          return {
+           return {
             row: index + 2,
             itemNo,
             inventory,
@@ -336,9 +336,9 @@ export function Upload() {
                         <td className="px-3 py-2 max-w-[200px] truncate">{row.description}</td>
                         <td className="px-3 py-2">{row.brand}</td>
                         <td className="px-3 py-2">{row.model}</td>
-                        <td className="px-3 py-2 text-right">${row.varPrice.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">${row.srpPrice.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">${row.lpPrice.toFixed(2)}</td>
+                         <td className="px-3 py-2 text-right">{row.varPrice.toFixed(2)}</td>
+                         <td className="px-3 py-2 text-right">{row.srpPrice.toFixed(2)}</td>
+                         <td className="px-3 py-2 text-right">{row.lpPrice.toFixed(2)}</td>
                         <td className="px-3 py-2">{row.stockAvailability}</td>
                       </tr>
                     ))}
