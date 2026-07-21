@@ -92,7 +92,8 @@ export function Upload() {
 
         const headerRowIndex = raw.findIndex((row) => {
           const values = row.map((v) => String(v ?? "").trim().toLowerCase())
-          return values.some((v) => /item\s*no\.?|inventory|description|var|srp|lp|stock/i.test(v))
+          const score = values.filter((v) => /item\s*no\.?|inventory|description|order\s*qty\.?|uom|var|srp|lp|stock|warranty|remarks/i.test(v)).length
+          return score >= 3
         })
 
         const dataStartIndex = headerRowIndex >= 0 ? headerRowIndex + 1 : 1
