@@ -133,8 +133,7 @@ export function Upload() {
           const stockAvailability = String(row[stockIdx] || "Unknown").trim()
 
            const stopWords = new Set([
-            "the","and","for","with","of","in","on","at","to","a","an","is","it","he","she","we","you","me","him","her","us","them","this","that","these","those","i","we","you","he","she","it","they","my","your","his","its","our","their","what","which","who","when","where","why","how","all","each","every","both","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","can","will","just","don","should","now","d","ll","m","re","ve","y","t","s","st","nd","rd","th",
-            "mini","standard","professional","compact","portable","wireless","bluetooth","digital","analog","active","passive","super","multi","all","in","one","duplex","simplex","high","speed","new","old","legacy","classic","modern","advanced","basic","essential","premium","elite","pro","plus","max","ultra","extreme","color","connector","type","transmission","direction","resolution","conductor","counter","offer","for","onstock","other","supplier","please","check","details","below","tinned","copper","black","white"
+            "the","and","for","with","of","in","on","at","to","a","an","is","it","he","she","we","you","me","him","her","us","them","this","that","these","those","i","we","you","he","she","it","they","my","your","his","its","our","their","what","which","who","when","where","why","how","all","each","every","both","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","can","will","just","don","should","now","d","ll","m","re","ve","y","t","s","st","nd","rd","th"
           ])
 
           const firstWord = description.split(/\s+/)[0]
@@ -142,14 +141,12 @@ export function Upload() {
           
           let model = "Unknown"
           const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
-          const separators = /[>\-|:]/
-          const afterSeparator = afterBrand.split(separators).pop()?.trim() || afterBrand
           
-          const fruMatch = afterSeparator.match(/FRU:\s*([A-Z0-9\/]+)/i)
+          const fruMatch = afterBrand.match(/FRU:\s*([A-Z0-9\/]+)/i)
           if (fruMatch) {
             model = fruMatch[1]
           } else {
-            const tokens = afterSeparator.split(/\s+/)
+            const tokens = afterBrand.split(/\s+/)
             const meaningfulTokens = tokens.filter((token) => {
               const cleaned = token.replace(/[^A-Za-z0-9\-./]/g, "")
               if (!cleaned || cleaned.length < 2 || stopWords.has(cleaned.toLowerCase())) return false
