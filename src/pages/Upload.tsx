@@ -132,17 +132,27 @@ export function Upload() {
           const uom = String(row[uomIdx] || "Unit").trim()
           const stockAvailability = String(row[stockIdx] || "Unknown").trim()
 
-          const brandMatch = description.match(/(LENOVO|VENTION|Yamaha|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba)/i)
-          const brand = brandMatch ? brandMatch[0] : "Unknown"
+          const knownBrands = /(LENOVO|VENTION|Yamaha|TRUEVISION|Lemorele|BOSE|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba|3M|Belkin|StarTech|Kensington|Targus|Logitech|Razer|Corsair|HyperX|SteelSeries)/i
+          const brandMatch = description.match(knownBrands)
+          const brand = brandMatch ? brandMatch[0] : description.split(/\s+/)[0]
           
           let model = "Unknown"
-          const fruMatch = description.match(/FRU:\s*([A-Z0-9\/]+)/i)
+          const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
+          
+          const fruMatch = afterBrand.match(/FRU:\s*([A-Z0-9\/]+)/i)
           if (fruMatch) {
             model = fruMatch[1]
           } else {
-            const modelMatch = description.match(/(?:^|\s)([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?|DM3|HS8|[A-Z]{2,}\d+)/)
-            if (modelMatch) {
-              model = modelMatch[1]
+            const firstToken = afterBrand.split(/\s+/)[0]
+            if (firstToken) {
+              model = firstToken.replace(/[^A-Za-z0-9\-./]/g, "")
+            }
+          }
+          
+          if (!model || model === "Unknown") {
+            const fallbackMatch = description.match(/([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?|DM3|HS8|DM6C|P2600A|R1030|TV12-610TW|TesiraFORTÉ\s*AI)/i)
+            if (fallbackMatch) {
+              model = fallbackMatch[1]
             }
           }
 
