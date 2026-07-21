@@ -157,17 +157,28 @@ export function PriceList() {
                     className="h-4 w-4 rounded border-gray-300"
                   />
                 </TableHead>
+                <TableHead>Item No.</TableHead>
                 <TableHead>Inventory</TableHead>
-                <TableHead>Brand & Model</TableHead>
+                <TableHead>Brand</TableHead>
+                <TableHead>Model</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>UOM</TableHead>
+                <TableHead className="text-right">Order Qty.</TableHead>
                 <TableHead className="text-right">VAR Price</TableHead>
                 <TableHead className="text-right">SRP Price</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right">LP Price</TableHead>
+                <TableHead className="text-right">Buying Price</TableHead>
+                <TableHead>Stock Availability</TableHead>
+                <TableHead>Warranty</TableHead>
+                <TableHead>Remarks</TableHead>
+                <TableHead>Quote Date</TableHead>
                 <TableHead>Expiry Date</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+             <TableBody>
               {filtered.length > 0 ? (
                 filtered.map((price) => (
                   <TableRow key={price.id}>
@@ -179,54 +190,73 @@ export function PriceList() {
                         className="h-4 w-4 rounded border-gray-300"
                       />
                     </TableCell>
-                    <Link to={`/prices/${price.id}`} className="contents">
+                     <Link to={`/prices/${price.id}`} className="contents">
+                       <TableCell className="font-medium">
+                        {price.itemNo}
+                      </TableCell>
                       <TableCell className="font-medium">
                         {price.inventory}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-foreground">
-                            {price.model}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {price.brand}
-                          </span>
-                        </div>
+                        {price.brand}
+                      </TableCell>
+                      <TableCell>
+                        {price.model}
                       </TableCell>
                       <TableCell
-                        className="max-w-[200px] truncate"
+                        className="max-w-[250px] truncate"
                         title={price.description}
                       >
                         {price.description}
                       </TableCell>
+                      <TableCell>{price.category}</TableCell>
+                      <TableCell>{price.uom}</TableCell>
                       <TableCell className="text-right">
-                        ${price.varPrice.toFixed(2)}
+                        {price.orderQty}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${price.srpPrice.toFixed(2)}
+                        {price.varPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {price.srpPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {price.lpPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {price.buyingPrice.toFixed(2)}
+                      </TableCell>
+                      <TableCell>{price.stockAvailability}</TableCell>
+                      <TableCell>{price.warrantyInformation}</TableCell>
+                      <TableCell
+                        className="max-w-[200px] truncate"
+                        title={price.remarks}
+                      >
+                        {price.remarks}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(price.quoteDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(price.expiryDate).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getBadgeVariant(price.status)}>
                           {price.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {new Date(price.expiryDate).toLocaleDateString()}
-                      </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.preventDefault()}>
-                        {["Expired", "No Offer"].includes(price.status) && (
-                          <Button size="sm" variant="outline" className="h-8">
-                            <ShoppingCart className="mr-2 h-4 w-4" />
-                            Add to Cart
-                          </Button>
-                        )}
+                        <Button size="sm" variant="outline" className="h-8">
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Add to Cart
+                        </Button>
                       </TableCell>
                     </Link>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={20} className="h-24 text-center">
                     No results found.
                   </TableCell>
                 </TableRow>
