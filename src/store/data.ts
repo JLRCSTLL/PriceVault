@@ -91,3 +91,14 @@ export async function createPriceRecord(record: Partial<PriceRecord>) {
 
   return data
 }
+
+export async function deletePriceRecord(id: string) {
+  const { error } = await supabase.from("price_records").delete().eq("id", id)
+
+  if (error) {
+    console.error("Error deleting price record:", error)
+    return false
+  }
+
+  return true
+}

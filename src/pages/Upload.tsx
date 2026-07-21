@@ -132,7 +132,7 @@ export function Upload() {
           const uom = String(row[uomIdx] || "Unit").trim()
           const stockAvailability = String(row[stockIdx] || "Unknown").trim()
 
-          const brandMatch = description.match(/(LENOVO|VENTION|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba)/i)
+          const brandMatch = description.match(/(LENOVO|VENTION|Yamaha|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba)/i)
           const brand = brandMatch ? brandMatch[0] : "Unknown"
           
           let model = "Unknown"
@@ -140,7 +140,7 @@ export function Upload() {
           if (fruMatch) {
             model = fruMatch[1]
           } else {
-            const modelMatch = description.match(/(?:^|\s)([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?)/)
+            const modelMatch = description.match(/(?:^|\s)([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?|DM3|HS8|[A-Z]{2,}\d+)/)
             if (modelMatch) {
               model = modelMatch[1]
             }

@@ -9,8 +9,8 @@ import {
 } from "../components/ui/table"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
-import { fetchPrices, PriceStatus, PriceRecord } from "../store/data"
-import { Search, Filter, ShoppingCart } from "lucide-react"
+import { fetchPrices, deletePriceRecord, PriceStatus, PriceRecord } from "../store/data"
+import { Search, Filter, ShoppingCart, Trash2 } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export function PriceList() {
@@ -18,6 +18,7 @@ export function PriceList() {
   const [filterStatus, setFilterStatus] = useState<PriceStatus | "All">("All")
   const [prices, setPrices] = useState<PriceRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadPrices()
@@ -41,6 +42,36 @@ export function PriceList() {
 
     return matchesSearch && matchesStatus
   })
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filtered.map((p) => p.id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Delete ${selectedIds.size} selected item(s)?`)) return
+
+    const deletePromises = Array.from(selectedIds).map((id) => deletePriceRecord(id))
+    await Promise.all(deletePromises)
+
+    setSelectedIds(new Set())
+    loadPrices()
+  }
 
   const getBadgeVariant = (status: string) => {
     switch (status) {
@@ -99,6 +130,18 @@ export function PriceList() {
             <option value="EOL">EOL</option>
           </select>
         </div>
+
+        {selectedIds.size > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteSelected}
+            className="shrink-0"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Selected ({selectedIds.size})
+          </Button>
+        )}
       </div>
 
       <div className="rounded-md border flex-1 overflow-hidden bg-white shadow-sm flex flex-col">
@@ -106,6 +149,14 @@ export function PriceList() {
           <Table>
             <TableHeader className="sticky top-0 bg-muted/90 backdrop-blur z-10">
               <TableRow>
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                </TableHead>
                 <TableHead>Inventory</TableHead>
                 <TableHead>Brand & Model</TableHead>
                 <TableHead>Description</TableHead>
@@ -119,7 +170,15 @@ export function PriceList() {
             <TableBody>
               {filtered.length > 0 ? (
                 filtered.map((price) => (
-                  <TableRow key={price.id} className="cursor-pointer">
+                  <TableRow key={price.id}>
+                    <TableCell className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(price.id)}
+                        onChange={() => toggleSelect(price.id)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </TableCell>
                     <Link to={`/prices/${price.id}`} className="contents">
                       <TableCell className="font-medium">
                         {price.inventory}
@@ -167,7 +226,7 @@ export function PriceList() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     No results found.
                   </TableCell>
                 </TableRow>
