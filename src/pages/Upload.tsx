@@ -143,20 +143,32 @@ export function Upload() {
           const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
           const separators = /[>\-|:]/
           const afterSeparator = afterBrand.split(separators).pop()?.trim() || afterBrand
-          const tokens = afterSeparator.split(/\s+/)
           
-          const modelToken = tokens.find((token) => {
-            const cleaned = token.replace(/[^A-Za-z0-9\-.]/g, "")
-            if (!cleaned || cleaned.length < 2 || stopWords.has(cleaned.toLowerCase())) return false
-            return /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
-          })
-          
-          if (modelToken) {
-            model = modelToken.replace(/[^A-Za-z0-9\-.]/g, "")
-          } else if (tokens.length > 0) {
-            const first = tokens[0].replace(/[^A-Za-z0-9\-.]/g, "")
-            if (first && first.length >= 2 && !stopWords.has(first.toLowerCase())) {
-              model = first
+          const fruMatch = afterSeparator.match(/FRU:\s*([A-Z0-9\/]+)/i)
+          if (fruMatch) {
+            model = fruMatch[1]
+          } else {
+            const tokens = afterSeparator.split(/\s+/)
+            const modelToken = tokens.find((token) => {
+              const cleaned = token.replace(/[^A-Za-z0-9\-./]/g, "")
+              if (!cleaned || cleaned.length < 2) return false
+              return /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
+            })
+            
+            if (modelToken) {
+              model = modelToken.replace(/[^A-Za-z0-9\-./]/g, "")
+            } else if (tokens.length > 0) {
+              const first = tokens[0].replace(/[^A-Za-z0-9\-.]/g, "")
+              if (first && first.length >= 2) {
+                model = first
+              }
+            }
+            
+            if (model === "Unknown" && tokens.length >= 2) {
+              const twoWordModel = `${tokens[0]} ${tokens[1]}`.replace(/[^A-Za-z0-9\-.\s]/g, "").trim()
+              if (twoWordModel && twoWordModel.length >= 3) {
+                model = twoWordModel
+              }
             }
           }
           
