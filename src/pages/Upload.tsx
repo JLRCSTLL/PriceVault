@@ -19,9 +19,13 @@ interface ParsedRow {
   inventory: string
   description: string
   varPrice: number
-  srpPrice?: number
+  srpPrice: number
+  lpPrice: number
   brand: string
   model: string
+  orderQty: number
+  uom: string
+  stockAvailability: string
 }
 
 export function Upload() {
@@ -83,20 +87,39 @@ export function Upload() {
 
         const rows: ParsedRow[] = json.map((row, index) => {
           const description = String(row.Description || row["Description"] || row.description || "")
-          const brandMatch = description.match(/(Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Lenovo|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba|NEC)/i)
+          const itemNo = String(row["Item No."] || row.itemNo || `ROW-${index + 2}`)
+          const inventory = String(row.Inventory || row.inventory || `INV-${index + 2}`)
+          const varPrice = Number(row["VAR/PER UNIT"] || row.varPrice || row["VAR Price"] || 0)
+          const srpPrice = Number(row["SRP/PER UNIT"] || row.srpPrice || row["SRP Price"] || 0)
+          const lpPrice = Number(row["LP/PER UNIT"] || row.lpPrice || row["LP Price"] || 0)
+
+          const brandMatch = description.match(/(LENOVO|VENTION|Epson|Panasonic|Sony|DJI|Canon|ATEN|Ugreen|Sandisk|Dell|HP|Acer|BenQ|Optoma|ViewSonic|Samsung|LG|NEC|Hitachi|Mitsubishi|Casio|Ricoh|Kyocera|Toshiba)/i)
           const brand = brandMatch ? brandMatch[0] : "Unknown"
-          const modelMatch = description.match(/([A-Z0-9]+-[A-Z0-9]+(?:\/[A-Z0-9]+)?|[A-Z]{2,}-[A-Z0-9]{2,})/i)
-          const model = modelMatch ? modelMatch[0] : "Unknown"
+          
+          let model = "Unknown"
+          const fruMatch = description.match(/FRU:\s*([A-Z0-9\/]+)/i)
+          if (fruMatch) {
+            model = fruMatch[1]
+          } else {
+            const modelMatch = description.match(/(?:^|\s)([A-Z]{2,}-[A-Z0-9]{2,}(?:\/[A-Z0-9]+)?)/)
+            if (modelMatch) {
+              model = modelMatch[1]
+            }
+          }
 
           return {
             row: index + 2,
-            itemNo: String(row["Item No."] || row.itemNo || `ROW-${index + 2}`),
-            inventory: String(row.Inventory || row.inventory || `INV-${index + 2}`),
+            itemNo,
+            inventory,
             description,
-            varPrice: Number(row["VAR/PER UNIT"] || row.varPrice || row["VAR Price"] || 0),
-            srpPrice: Number(row["SRP/PER UNIT"] || row.srpPrice || row["SRP Price"] || 0),
+            varPrice,
+            srpPrice,
+            lpPrice,
             brand,
             model,
+            orderQty: Number(row["Order Qty."] || row.orderQty || 1),
+            uom: String(row.UOM || row.uom || "Unit"),
+            stockAvailability: String(row["Stock Availability"] || row.stockAvailability || "Unknown"),
           }
         })
 
@@ -127,6 +150,10 @@ export function Upload() {
             model: row.model,
             varPrice: row.varPrice,
             srpPrice: row.srpPrice || 0,
+            lpPrice: row.lpPrice || 0,
+            orderQty: row.orderQty,
+            uom: row.uom,
+            stockAvailability: row.stockAvailability,
             quoteDate: today.toISOString(),
             expiryDate: expiryDate.toISOString(),
             status: "Active",
@@ -221,7 +248,7 @@ export function Upload() {
                 </Button>
               </div>
 
-              <div className="border rounded-lg overflow-auto max-h-[300px]">
+               <div className="border rounded-lg overflow-auto max-h-[300px]">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
@@ -230,7 +257,10 @@ export function Upload() {
                       <th className="px-3 py-2 text-left">Description</th>
                       <th className="px-3 py-2 text-left">Brand</th>
                       <th className="px-3 py-2 text-left">Model</th>
-                      <th className="px-3 py-2 text-right">VAR Price</th>
+                      <th className="px-3 py-2 text-right">VAR</th>
+                      <th className="px-3 py-2 text-right">SRP</th>
+                      <th className="px-3 py-2 text-right">LP</th>
+                      <th className="px-3 py-2 text-left">Stock</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -242,6 +272,9 @@ export function Upload() {
                         <td className="px-3 py-2">{row.brand}</td>
                         <td className="px-3 py-2">{row.model}</td>
                         <td className="px-3 py-2 text-right">${row.varPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right">${row.srpPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right">${row.lpPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2">{row.stockAvailability}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -285,35 +318,39 @@ export function Upload() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Expected Columns format</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" /> Item No.
+        <Card>
+          <CardHeader>
+            <CardTitle>Expected Columns format</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Item No.
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Inventory
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Description
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> VAR/PER UNIT
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500" /> SRP/PER UNIT
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500" /> LP/PER UNIT
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500" /> Order Qty.
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500" /> UOM
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" /> Inventory
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" /> Description
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-500" /> VAR Price
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-500" /> SRP Price
-              (Optional)
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-500" /> LP Price
-              (Optional)
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
     </div>
   )
 }
