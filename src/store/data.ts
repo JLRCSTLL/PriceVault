@@ -8,6 +8,7 @@ export interface PriceRecord {
   inventory: string
   brand: string
   model: string
+  part_number: string
   description: string
   category: string
   uom: string
@@ -41,6 +42,7 @@ export async function fetchPrices(): Promise<PriceRecord[]> {
     inventory: row.inventory,
     brand: row.brand,
     model: row.model,
+    partNumber: row.part_number || "",
     description: row.description,
     category: row.category || "",
     uom: row.uom || "Unit",
@@ -66,6 +68,7 @@ export async function createPriceRecord(record: Partial<PriceRecord>) {
       inventory: record.inventory,
       brand: record.brand,
       model: record.model,
+      part_number: record.partNumber,
       description: record.description,
       category: record.category,
       uom: record.uom,

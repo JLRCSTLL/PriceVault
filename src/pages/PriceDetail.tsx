@@ -109,7 +109,7 @@ export function PriceDetail() {
             </h2>
           </div>
           <p className="text-muted-foreground ml-10">
-            {price.brand} - {price.description}
+            {price.brand} - {price.description} {price.partNumber && `- Part #: ${price.partNumber}`}
           </p>
         </div>
         <Button
@@ -125,9 +125,10 @@ export function PriceDetail() {
                 description: price.description,
                 brand: price.brand,
                 model: price.model,
+                partNumber: price.partNumber,
                 category: price.category,
                 uom: price.uom,
-                orderQty: price.orderQty,
+                orderQty: 1,
                 varPrice: price.varPrice,
                 srpPrice: price.srpPrice,
                 lpPrice: price.lpPrice,

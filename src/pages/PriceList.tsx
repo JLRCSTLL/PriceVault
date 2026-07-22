@@ -163,6 +163,7 @@ export function PriceList() {
                 <TableHead>Inventory</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead>Model</TableHead>
+                <TableHead>Part #</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>UOM</TableHead>
@@ -205,12 +206,15 @@ export function PriceList() {
                        <TableCell>
                         {price.model}
                        </TableCell>
+                       <TableCell>
+                        {price.partNumber || "-"}
+                       </TableCell>
                        <TableCell
-                        className="max-w-[250px] truncate"
-                        title={price.description}
-                      >
-                        {price.description}
-                      </TableCell>
+                         className="max-w-[250px] truncate"
+                         title={price.description}
+                       >
+                         {price.description}
+                       </TableCell>
                       <TableCell>{price.category}</TableCell>
                       <TableCell>{price.uom}</TableCell>
                       <TableCell className="text-right">
@@ -257,27 +261,28 @@ export function PriceList() {
                            if (cartItems.find((c) => c.id === price.id)) {
                              removeFromCart(price.id)
                            } else {
-                             addToCart({
-                               id: price.id,
-                               itemNo: price.itemNo,
-                               inventory: price.inventory,
-                               description: price.description,
-                               brand: price.brand,
-                               model: price.model,
-                               category: price.category,
-                               uom: price.uom,
-                               orderQty: price.orderQty,
-                               varPrice: price.varPrice,
-                               srpPrice: price.srpPrice,
-                               lpPrice: price.lpPrice,
-                               buyingPrice: price.buyingPrice,
-                               stockAvailability: price.stockAvailability,
-                               warrantyInformation: price.warrantyInformation,
-                               remarks: price.remarks,
-                               quoteDate: price.quoteDate,
-                               expiryDate: price.expiryDate,
-                               status: price.status,
-                             })
+                              addToCart({
+                                id: price.id,
+                                itemNo: price.itemNo,
+                                inventory: price.inventory,
+                                description: price.description,
+                                brand: price.brand,
+                                model: price.model,
+                                partNumber: price.partNumber,
+                                category: price.category,
+                                uom: price.uom,
+                                orderQty: 1,
+                                varPrice: price.varPrice,
+                                srpPrice: price.srpPrice,
+                                lpPrice: price.lpPrice,
+                                buyingPrice: price.buyingPrice,
+                                stockAvailability: price.stockAvailability,
+                                warrantyInformation: price.warrantyInformation,
+                                remarks: price.remarks,
+                                quoteDate: price.quoteDate,
+                                expiryDate: price.expiryDate,
+                                status: price.status,
+                              })
                            }
                          }}
                        >
@@ -289,7 +294,7 @@ export function PriceList() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={20} className="h-24 text-center">
+                  <TableCell colSpan={21} className="h-24 text-center">
                     No results found.
                   </TableCell>
                 </TableRow>

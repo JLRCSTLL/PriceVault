@@ -26,6 +26,7 @@ interface ParsedRow {
   orderQty: number
   uom: string
   stockAvailability: string
+  partNumber?: string
 }
 
 export function Upload() {
@@ -92,7 +93,7 @@ export function Upload() {
 
         const headerRowIndex = raw.findIndex((row) => {
           const values = row.map((v) => String(v ?? "").trim().toLowerCase())
-          const score = values.filter((v) => /item\s*no\.?|inventory|description|order\s*qty\.?|uom|var|srp|lp|stock|warranty|remarks/i.test(v)).length
+          const score = values.filter((v) => /item\s*no\.?|inventory|description|order\s*qty\.?|uom|var|srp|lp|stock|warranty|remarks|brand|part\s*#|model|specification|unit\s*price|total\s*price|price\s*or\s*mark\s*up/i.test(v)).length
           return score >= 3
         })
 
@@ -111,15 +112,21 @@ export function Upload() {
           return -1
         }
 
-        const itemNoIdx = col(["item no.", "itemno", "item_no"])
+        const itemNoIdx = col(["item no.", "itemno", "item_no", "item"])
         const inventoryIdx = col(["inventory", "inventory no", "inventory_no"])
-        const descriptionIdx = col(["description", "desc", "item description"])
-        const varPriceIdx = col(["var/per unit", "var_price", "varprice", "var"])
-        const srpPriceIdx = col(["srp/per unit", "srp_price", "srpprice", "srp"])
+        const descriptionIdx = col(["description", "desc", "item description", "specification"])
+        const varPriceIdx = col(["var/per unit", "var_price", "varprice", "var", "unit price"])
+        const srpPriceIdx = col(["srp/per unit", "srp_price", "srpprice", "srp", "total price"])
         const lpPriceIdx = col(["lp/per unit", "lp_price", "lpprice", "lp"])
         const orderQtyIdx = col(["order qty.", "order_qty", "orderqty", "qty"])
         const uomIdx = col(["uom", "unit"])
         const stockIdx = col(["stock availability", "stock_availability", "stockavailability"])
+
+        const brandIdx = col(["brand"])
+        const modelIdx = col(["model", "part #"])
+        const partIdx = col(["part #"])
+
+        const isEwsFormat = brandIdx >= 0 && modelIdx >= 0
 
         const rows: ParsedRow[] = dataRows.map((row, index) => {
           const description = String(row[descriptionIdx] ?? "").trim()
@@ -131,56 +138,65 @@ export function Upload() {
           const orderQty = Number(row[orderQtyIdx] || 1)
           const uom = String(row[uomIdx] || "Unit").trim()
           const stockAvailability = String(row[stockIdx] || "Unknown").trim()
+          const partNumber = partIdx >= 0 ? String(row[partIdx] ?? "").trim() : undefined
 
-           const stopWords = new Set([
-            "the","and","for","with","of","in","on","at","to","a","an","is","it","he","she","we","you","me","him","her","us","them","this","that","these","those","i","we","you","he","she","it","they","my","your","his","its","our","their","what","which","who","when","where","why","how","all","each","every","both","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","can","will","just","don","should","now","d","ll","m","re","ve","y","t","s","st","nd","rd","th"
-          ])
-
-          const firstWord = description.split(/\s+/)[0]
-          const brand = firstWord.length >= 2 && /[A-Za-z]/.test(firstWord) && !stopWords.has(firstWord.toLowerCase()) ? firstWord : "Unknown"
-          
+          let brand = "Unknown"
           let model = "Unknown"
-          const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
-          
-          const fruMatch = afterBrand.match(/FRU:\s*([A-Z0-9\/]+)/i)
-          if (fruMatch) {
-            model = fruMatch[1]
+
+          if (isEwsFormat) {
+            brand = String(row[brandIdx] ?? "Unknown").trim()
+            model = String(row[modelIdx] ?? "Unknown").trim()
           } else {
-            const tokens = afterBrand.split(/\s+/)
-            const meaningfulTokens = tokens.filter((token) => {
-              const cleaned = token.replace(/[^A-Za-z0-9\-./]/g, "")
-              if (!cleaned || cleaned.length < 2 || stopWords.has(cleaned.toLowerCase())) return false
-              return /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
-            })
+            const stopWords = new Set([
+              "the","and","for","with","of","in","on","at","to","a","an","is","it","he","she","we","you","me","him","her","us","them","this","that","these","those","i","we","you","he","she","it","they","my","your","his","its","our","their","what","which","who","when","where","why","how","all","each","every","both","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","can","will","just","don","should","now","d","ll","m","re","ve","y","t","s","st","nd","rd","th"
+            ])
+
+            const firstWord = description.split(/\s+/)[0]
+            brand = firstWord.length >= 2 && /[A-Za-z]/.test(firstWord) && !stopWords.has(firstWord.toLowerCase()) ? firstWord : "Unknown"
             
-            if (meaningfulTokens.length >= 2) {
-              model = `${meaningfulTokens[0]} ${meaningfulTokens[1]}`.replace(/[^A-Za-z0-9\-./\s]/g, "").trim()
-            } else if (meaningfulTokens.length === 1) {
-              model = meaningfulTokens[0].replace(/[^A-Za-z0-9\-./]/g, "")
+            const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
+            
+            const fruMatch = afterBrand.match(/FRU:\s*([A-Z0-9\/]+)/i)
+            if (fruMatch) {
+              model = fruMatch[1]
+            } else {
+              const tokens = afterBrand.split(/\s+/)
+              const meaningfulTokens = tokens.filter((token) => {
+                const cleaned = token.replace(/[^A-Za-z0-9\-./]/g, "")
+                if (!cleaned || cleaned.length < 2 || stopWords.has(cleaned.toLowerCase())) return false
+                return /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
+              })
+              
+              if (meaningfulTokens.length >= 2) {
+                model = `${meaningfulTokens[0]} ${meaningfulTokens[1]}`.replace(/[^A-Za-z0-9\-./\s]/g, "").trim()
+              } else if (meaningfulTokens.length === 1) {
+                model = meaningfulTokens[0].replace(/[^A-Za-z0-9\-./]/g, "")
+              }
+            }
+            
+            if (model === "Unknown") {
+              const fallbackMatch = description.match(/([A-Z0-9]{2,}(?:-[A-Z0-9]+)+)/)
+              if (fallbackMatch) {
+                model = fallbackMatch[1]
+              }
             }
           }
-          
-           if (model === "Unknown") {
-             const fallbackMatch = description.match(/([A-Z0-9]{2,}(?:-[A-Z0-9]+)+)/)
-             if (fallbackMatch) {
-               model = fallbackMatch[1]
-             }
-           }
 
            return {
-            row: index + 2,
-            itemNo,
-            inventory,
-            description,
-            varPrice,
-            srpPrice,
-            lpPrice,
-            brand,
-            model,
-            orderQty,
-            uom,
-            stockAvailability,
-          }
+             row: index + 2,
+             itemNo,
+             inventory,
+             description,
+             varPrice,
+             srpPrice,
+             lpPrice,
+             brand,
+             model,
+             orderQty,
+             uom,
+             stockAvailability,
+             partNumber,
+           }
         }).filter((row) => {
           if (!row.description || row.description.length < 3) return false
           if (row.varPrice <= 0 && row.srpPrice <= 0 && row.lpPrice <= 0) return false
@@ -213,10 +229,11 @@ export function Upload() {
             description: row.description,
             brand: row.brand,
             model: row.model,
+            partNumber: row.partNumber,
             varPrice: row.varPrice,
             srpPrice: row.srpPrice || 0,
             lpPrice: row.lpPrice || 0,
-            orderQty: row.orderQty,
+            orderQty: 1,
             uom: row.uom,
             stockAvailability: row.stockAvailability,
             quoteDate: today.toISOString(),
@@ -315,34 +332,36 @@ export function Upload() {
 
                <div className="border rounded-lg overflow-auto max-h-[300px]">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted sticky top-0">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Row</th>
-                      <th className="px-3 py-2 text-left">Inventory</th>
-                      <th className="px-3 py-2 text-left">Description</th>
-                      <th className="px-3 py-2 text-left">Brand</th>
-                      <th className="px-3 py-2 text-left">Model</th>
-                      <th className="px-3 py-2 text-right">VAR</th>
-                      <th className="px-3 py-2 text-right">SRP</th>
-                      <th className="px-3 py-2 text-right">LP</th>
-                      <th className="px-3 py-2 text-left">Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedRows.slice(0, 50).map((row) => (
-                      <tr key={row.row} className="border-t">
-                        <td className="px-3 py-2 text-xs text-muted-foreground">{row.row}</td>
-                        <td className="px-3 py-2">{row.inventory}</td>
-                        <td className="px-3 py-2 max-w-[200px] truncate">{row.description}</td>
-                        <td className="px-3 py-2">{row.brand}</td>
-                        <td className="px-3 py-2">{row.model}</td>
-                         <td className="px-3 py-2 text-right">{row.varPrice.toFixed(2)}</td>
-                         <td className="px-3 py-2 text-right">{row.srpPrice.toFixed(2)}</td>
-                         <td className="px-3 py-2 text-right">{row.lpPrice.toFixed(2)}</td>
-                        <td className="px-3 py-2">{row.stockAvailability}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                   <thead className="bg-muted sticky top-0">
+                     <tr>
+                       <th className="px-3 py-2 text-left">Row</th>
+                       <th className="px-3 py-2 text-left">Inventory</th>
+                       <th className="px-3 py-2 text-left">Description</th>
+                       <th className="px-3 py-2 text-left">Brand</th>
+                       <th className="px-3 py-2 text-left">Model</th>
+                       <th className="px-3 py-2 text-left">Part #</th>
+                       <th className="px-3 py-2 text-right">VAR</th>
+                       <th className="px-3 py-2 text-right">SRP</th>
+                       <th className="px-3 py-2 text-right">LP</th>
+                       <th className="px-3 py-2 text-left">Stock</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {parsedRows.slice(0, 50).map((row) => (
+                       <tr key={row.row} className="border-t">
+                         <td className="px-3 py-2 text-xs text-muted-foreground">{row.row}</td>
+                         <td className="px-3 py-2">{row.inventory}</td>
+                         <td className="px-3 py-2 max-w-[200px] truncate">{row.description}</td>
+                         <td className="px-3 py-2">{row.brand}</td>
+                         <td className="px-3 py-2">{row.model}</td>
+                         <td className="px-3 py-2">{row.partNumber || "-"}</td>
+                          <td className="px-3 py-2 text-right">{row.varPrice.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right">{row.srpPrice.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right">{row.lpPrice.toFixed(2)}</td>
+                         <td className="px-3 py-2">{row.stockAvailability}</td>
+                       </tr>
+                     ))}
+                   </tbody>
                 </table>
               </div>
 
@@ -386,6 +405,9 @@ export function Upload() {
         <Card>
           <CardHeader>
             <CardTitle>Expected Columns format</CardTitle>
+            <CardDescription>
+              The system supports both Admin Price List and EWS RTU formats.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -396,16 +418,19 @@ export function Upload() {
                 <CheckCircle className="h-4 w-4 text-emerald-500" /> Inventory
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-500" /> Description
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Description / Specification
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-500" /> VAR/PER UNIT
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Brand
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-500" /> SRP/PER UNIT
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> Model / Part #
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-500" /> LP/PER UNIT
+                <CheckCircle className="h-4 w-4 text-emerald-500" /> VAR/PER UNIT / Unit Price
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500" /> SRP/PER UNIT / Total Price
               </div>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-orange-500" /> Order Qty.

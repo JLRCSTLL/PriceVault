@@ -20,16 +20,16 @@ import * as XLSX from "xlsx"
 import { useCart } from "../store/cart"
 
 export function RequestCart() {
-  const { items, removeFromCart, updateQty, updateItem, clearCart } = useCart()
+  const { items, removeFromCart, updateItem, clearCart } = useCart()
 
   const handleGenerate = () => {
     const data = items.map((item) => ({
       Inventory: item.inventory,
       Description: item.description,
       UOM: item.uom,
-      "Order Qty.": item.orderQty,
+      "Order Qty.": 1,
       "Est. Unit Cost": (item.buyingPrice || item.varPrice).toFixed(2),
-      "Est. Ext. Cost": ((item.buyingPrice || item.varPrice) * item.orderQty).toFixed(2),
+      "Est. Ext. Cost": (item.buyingPrice || item.varPrice).toFixed(2),
       "Required Date": item.requiredDate,
       "Promised Date": item.promisedDate,
       "Issue Status": item.issueStatus,
@@ -83,9 +83,9 @@ export function RequestCart() {
                 <TableHead>Inventory</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="w-24">UOM</TableHead>
-                <TableHead className="w-24">Order Qty.</TableHead>
-                <TableHead className="text-right">Est. Unit Cost</TableHead>
-                <TableHead className="text-right">Est. Ext. Cost</TableHead>
+                <TableHead className="w-16">Order Qty.</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead className="text-right">Total Price</TableHead>
                 <TableHead className="w-32">Required Date</TableHead>
                 <TableHead className="w-32">Promised Date</TableHead>
                 <TableHead>Issue Status</TableHead>
@@ -105,22 +105,12 @@ export function RequestCart() {
                     </TableCell>
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{item.uom}</TableCell>
-                    <TableCell>
-                      <input
-                        type="number"
-                        className="w-16 h-8 border rounded px-2 text-sm"
-                        value={item.orderQty}
-                        onChange={(e) =>
-                          updateQty(item.id, Number(e.target.value))
-                        }
-                        min="1"
-                      />
-                    </TableCell>
+                    <TableCell>1</TableCell>
                     <TableCell className="text-right">
                       {(item.buyingPrice || item.varPrice).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {((item.buyingPrice || item.varPrice) * item.orderQty).toFixed(2)}
+                      {(item.buyingPrice || item.varPrice).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <input

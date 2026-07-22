@@ -8,6 +8,7 @@ create table if not exists public.price_records (
   inventory text not null,
   brand text not null,
   model text not null,
+  part_number text,
   description text not null,
   category text,
   uom text default 'Unit',
