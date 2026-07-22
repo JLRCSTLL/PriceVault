@@ -217,9 +217,9 @@ export function PriceList() {
                        </TableCell>
                       <TableCell>{price.category}</TableCell>
                       <TableCell>{price.uom}</TableCell>
-                      <TableCell className="text-right">
-                        {price.orderQty}
-                      </TableCell>
+                       <TableCell className="text-right">
+                         1
+                       </TableCell>
                       <TableCell className="text-right">
                         {price.varPrice.toFixed(2)}
                       </TableCell>
