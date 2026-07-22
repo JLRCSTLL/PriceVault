@@ -11,11 +11,13 @@ import {
   Vault,
   Users,
   Shield,
+  Moon,
+  Sun,
 } from "lucide-react"
 import { cn } from "../lib/utils"
 import { useAuth } from "../store/auth"
+import { useTheme } from "../store/theme"
 import { Button } from "../components/ui/button"
-import { Badge } from "../components/ui/badge"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -29,6 +31,11 @@ const navigation = [
 
 export function Layout() {
   const { user, profile, signOut } = useAuth()
+  const { resolvedTheme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  }
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
@@ -80,7 +87,24 @@ export function Layout() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start rounded-none hover:bg-muted"
+            onClick={toggleTheme}
+          >
+            {resolvedTheme === "dark" ? (
+              <>
+                <Sun className="h-4 w-4 mr-2" />
+                Light Mode
+              </>
+            ) : (
+              <>
+                <Moon className="h-4 w-4 mr-2" />
+                Dark Mode
+              </>
+            )}
+          </Button>
           <Button
             variant="ghost"
             className="w-full justify-start rounded-none hover:bg-muted"
