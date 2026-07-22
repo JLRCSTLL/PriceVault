@@ -33,24 +33,24 @@ export function Layout() {
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-sidebar-hover">
-          <Vault className="w-6 h-6 mr-2 text-white" />
-          <span className="font-bold text-lg tracking-tight text-white">Price Vault</span>
+      <div className="w-64 bg-sidebar border-r border-border flex flex-col">
+        <div className="h-16 flex items-center px-6">
+          <Vault className="w-5 h-5 mr-2" />
+          <span className="font-semibold text-base tracking-tight">Price Vault</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-3">
+          <ul className="space-y-0.5 px-3">
             {navigation.map((item) => (
               <li key={item.name}>
                 <NavLink
                   to={item.href}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-sidebar-hover text-white"
-                        : "text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white",
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     )
                   }
                 >
@@ -65,10 +65,10 @@ export function Layout() {
                   to="/admin/users"
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-sidebar-hover text-white"
-                        : "text-sidebar-foreground hover:bg-sidebar-hover/50 hover:text-white",
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     )
                   }
                 >
@@ -80,10 +80,10 @@ export function Layout() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-sidebar-hover">
+        <div className="p-4 border-t border-border">
           <Button
             variant="ghost"
-            className="w-full justify-start text-sidebar-foreground hover:text-white hover:bg-sidebar-hover/50"
+            className="w-full justify-start rounded-none hover:bg-muted"
             onClick={signOut}
           >
             <LogOut className="h-4 w-4 mr-2" />
@@ -95,20 +95,19 @@ export function Layout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 shrink-0">
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
-            <h1 className="font-semibold text-lg text-foreground">
-              Welcome back, {profile?.full_name || user?.email || "User"}
+            <h1 className="font-medium text-base text-foreground">
+              {profile?.full_name || user?.email || "User"}
             </h1>
             {profile?.role === "admin" && (
-              <Badge variant="active" className="flex items-center gap-1">
-                <Shield className="h-3 w-3" />
+              <Badge variant="outline" className="rounded-none text-xs border-foreground text-foreground">
                 Admin
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-xs font-medium">
               {(profile?.full_name || user?.email || "U").charAt(0).toUpperCase()}
             </div>
           </div>
