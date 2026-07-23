@@ -146,7 +146,7 @@ export function PriceList() {
         )}
       </div>
 
-      <div className="rounded-md border flex-1 overflow-hidden bg-white shadow-sm flex flex-col">
+      <div className="rounded-md border flex-1 overflow-hidden bg-card shadow-sm flex flex-col">
         <div className="overflow-auto flex-1">
           <Table>
             <TableHeader className="sticky top-0 bg-muted/90 backdrop-blur z-10">
