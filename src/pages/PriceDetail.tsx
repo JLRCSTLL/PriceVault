@@ -67,20 +67,20 @@ export function PriceDetail() {
     )
   }
 
-  const getBadgeVariant = (status: string) => {
+  const getStatusColorClass = (status: string) => {
     switch (status) {
       case "Active":
-        return "active"
+        return "text-emerald-600 dark:text-emerald-500"
       case "Expiring Soon":
-        return "expiring"
+        return "text-orange-600 dark:text-orange-400"
       case "Expired":
-        return "expired"
+        return "text-destructive"
       case "No Offer":
-        return "no-offer"
+        return "text-slate-600 dark:text-slate-400"
       case "EOL":
-        return "eol"
+        return "text-purple-600 dark:text-purple-400"
       default:
-        return "default"
+        return "text-foreground"
     }
   }
 
@@ -150,9 +150,9 @@ export function PriceDetail() {
             <CardTitle className="text-sm font-medium">Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant={getBadgeVariant(price.status)}>
+            <span className={getStatusColorClass(price.status)}>
               {price.status}
-            </Badge>
+            </span>
           </CardContent>
         </Card>
         <Card>

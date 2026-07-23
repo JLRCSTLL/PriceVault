@@ -79,20 +79,20 @@ export function PriceList() {
     loadPrices()
   }
 
-  const getBadgeVariant = (status: string) => {
+  const getStatusColorClass = (status: string) => {
     switch (status) {
       case "Active":
-        return "active"
+        return "text-emerald-600 dark:text-emerald-500"
       case "Expiring Soon":
-        return "expiring"
+        return "text-orange-600 dark:text-orange-400"
       case "Expired":
-        return "expired"
+        return "text-destructive"
       case "No Offer":
-        return "no-offer"
+        return "text-slate-600 dark:text-slate-400"
       case "EOL":
-        return "eol"
+        return "text-purple-600 dark:text-purple-400"
       default:
-        return "default"
+        return "text-foreground"
     }
   }
 
@@ -315,9 +315,9 @@ export function PriceList() {
                             {new Date(price.expiryDate).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getBadgeVariant(price.status)}>
+                            <span className={getStatusColorClass(price.status)}>
                               {price.status}
-                            </Badge>
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Badge variant={price.reqstNumber ? "default" : "outline"}>
@@ -412,7 +412,7 @@ export function PriceList() {
                                      <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
                                      <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
                                      <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
-                                     <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
+                                     <TableCell><span className={getStatusColorClass(price.status)}>{price.status}</span></TableCell>
                                       <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
                                    </Link>
                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -478,7 +478,7 @@ export function PriceList() {
                                       <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
                                       <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
                                       <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
-                                      <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
+                                      <TableCell><span className={getStatusColorClass(price.status)}>{price.status}</span></TableCell>
                                       <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
                                     </Link>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
