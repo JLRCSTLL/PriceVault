@@ -20,6 +20,7 @@ export interface CartItem {
   quoteDate: string
   expiryDate: string
   status: string
+  reqstNumber: string
   projectId: string
   projectTask: string
   requisitionRefNbr: string

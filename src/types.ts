@@ -20,4 +20,5 @@ export interface PriceRecord {
   quoteDate: string
   expiryDate: string
   status: PriceStatus
+  reqstNumber: string
 }

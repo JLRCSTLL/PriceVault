@@ -76,6 +76,19 @@ export function Upload() {
     }
   }
 
+  const extractReqstNumber = (filename: string): string => {
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "")
+    const match = nameWithoutExt.match(/REQST[-_]?([A-Z0-9\-]+)/i)
+    if (match && match[1]) {
+      return `REQST-${match[1]}`
+    }
+    const fallback = nameWithoutExt.match(/(REQST|REQ)[-_]?([A-Z0-9]+)/i)
+    if (fallback && fallback[2]) {
+      return `REQST-${fallback[2]}`
+    }
+    return `REQST-${nameWithoutExt}`
+  }
+
   const parseExcel = (selectedFile: File) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -221,6 +234,8 @@ export function Upload() {
       const expiryDate = new Date(today)
       expiryDate.setDate(expiryDate.getDate() + 30)
 
+      const reqstNumber = file ? extractReqstNumber(file.name) : ""
+
       const results = await Promise.all(
         parsedRows.map(async (row) => {
           return createPriceRecord({
@@ -239,6 +254,7 @@ export function Upload() {
             quoteDate: today.toISOString(),
             expiryDate: expiryDate.toISOString(),
             status: "Active",
+            reqstNumber,
           })
         })
       )

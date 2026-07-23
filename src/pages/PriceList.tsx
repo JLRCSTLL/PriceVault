@@ -10,7 +10,7 @@ import {
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { fetchPrices, deletePriceRecord, PriceStatus, PriceRecord } from "../store/data"
-import { Search, ShoppingCart, Trash2, LayoutList, FolderOpen } from "lucide-react"
+import { Search, ShoppingCart, Trash2, LayoutList, Folder, FolderOpen, ChevronRight, ChevronDown } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useCart } from "../store/cart"
 
@@ -23,6 +23,7 @@ export function PriceList() {
   const [prices, setPrices] = useState<PriceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const { addToCart, removeFromCart, updateQty, items: cartItems } = useCart()
 
   useEffect(() => {
@@ -95,12 +96,16 @@ export function PriceList() {
     }
   }
 
-  const getReqst = (price: PriceRecord): string => {
-    const cartItem = cartItems.find((c) => c.id === price.id)
-    if (cartItem) {
-      return cartItem.issueStatus || "Requested"
-    }
-    return "None"
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(groupKey)) {
+        next.delete(groupKey)
+      } else {
+        next.add(groupKey)
+      }
+      return next
+    })
   }
 
   const grouped =
@@ -113,17 +118,17 @@ export function PriceList() {
         }, {})
       : viewMode === "by-reqst"
         ? filtered.reduce<Record<string, PriceRecord[]>>((acc, p) => {
-            const key = getReqst(p)
+            const key = p.reqstNumber || "None"
             acc[key] = acc[key] || []
             acc[key].push(p)
             return acc
           }, {})
         : null
 
-  const groupOrder =
-    viewMode === "by-reqst"
-      ? ["Requested", "Approved", "Rejected", "None"]
-      : undefined
+  const getGroupLabel = (key: string) => {
+    if (viewMode === "by-brand") return key
+    return key
+  }
 
   if (loading) {
     return <div className="p-4">Loading...</div>
@@ -315,8 +320,8 @@ export function PriceList() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getReqst(price) === "None" ? "outline" : "default"}>
-                              {getReqst(price)}
+                            <Badge variant={price.reqstNumber ? "default" : "outline"}>
+                              {price.reqstNumber || "None"}
                             </Badge>
                           </TableCell>
                          </Link>
@@ -329,7 +334,7 @@ export function PriceList() {
                                if (cartItems.find((c) => c.id === price.id)) {
                                  removeFromCart(price.id)
                                } else {
-                                  addToCart({
+                                   addToCart({
                                     id: price.id,
                                     itemNo: price.itemNo,
                                     inventory: price.inventory,
@@ -350,6 +355,7 @@ export function PriceList() {
                                     quoteDate: price.quoteDate,
                                     expiryDate: price.expiryDate,
                                     status: price.status,
+                                    reqstNumber: price.reqstNumber,
                                   })
                                }
                              }}
@@ -360,126 +366,138 @@ export function PriceList() {
                          </TableCell>
                       </TableRow>
                     ))
-                  : viewMode === "by-brand" && grouped
-                    ? Object.entries(grouped)
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([brand, items]) => (
-                            <Fragment key={brand}>
-                            <TableRow className="bg-muted/50">
-                              <TableCell colSpan={22} className="font-semibold text-xs uppercase tracking-wider">
-                                {brand} ({items.length})
-                              </TableCell>
-                            </TableRow>
-                            {items.map((price) => (
-                              <TableRow key={price.id}>
-                                <TableCell className="w-10">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedIds.has(price.id)}
-                                    onChange={() => toggleSelect(price.id)}
-                                    className="h-4 w-4 rounded border-gray-300"
-                                  />
-                                </TableCell>
-                                <Link to={`/prices/${price.id}`} className="contents">
-                                  <TableCell className="font-medium">{price.itemNo}</TableCell>
-                                  <TableCell className="font-medium">{price.inventory}</TableCell>
-                                  <TableCell>{price.brand}</TableCell>
-                                  <TableCell>{price.model}</TableCell>
-                                  <TableCell>{price.partNumber || "-"}</TableCell>
-                                  <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
-                                  <TableCell>{price.category}</TableCell>
-                                  <TableCell>{price.uom}</TableCell>
-                                  <TableCell className="text-right">1</TableCell>
-                                  <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
-                                  <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
-                                  <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
-                                  <TableCell className="text-right">{price.buyingPrice.toFixed(2)}</TableCell>
-                                  <TableCell>{price.stockAvailability}</TableCell>
-                                  <TableCell>{price.warrantyInformation}</TableCell>
-                                  <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
-                                  <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
-                                  <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
-                                  <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
-                                  <TableCell><Badge variant={getReqst(price) === "None" ? "outline" : "default"}>{getReqst(price)}</Badge></TableCell>
-                                </Link>
-                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                  <Button size="sm" variant="outline" className="h-8" onClick={() => {
-                                    if (cartItems.find((c) => c.id === price.id)) {
-                                      removeFromCart(price.id)
-                                    } else {
-                                      addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status })
-                                    }
-                                  }}>
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                    {cartItems.find((c) => c.id === price.id) ? "Remove" : "Add to Cart"}
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </Fragment>
-                        ))
-                    : viewMode === "by-reqst" && grouped
-                      ? Object.entries(grouped)
-                          .sort(([a], [b]) => {
-                            const orderA = groupOrder ? groupOrder.indexOf(a) : a
-                            const orderB = groupOrder ? groupOrder.indexOf(b) : b
-                            return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB)
-                          })
-                          .map(([reqst, items]) => (
-                            <Fragment key={reqst}>
-                              <TableRow className="bg-muted/50">
-                                <TableCell colSpan={22} className="font-semibold text-xs uppercase tracking-wider">
-                                  {reqst} ({items.length})
-                                </TableCell>
-                              </TableRow>
-                              {items.map((price) => (
-                                <TableRow key={price.id}>
-                                  <TableCell className="w-10">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedIds.has(price.id)}
-                                      onChange={() => toggleSelect(price.id)}
-                                      className="h-4 w-4 rounded border-gray-300"
-                                    />
-                                  </TableCell>
-                                  <Link to={`/prices/${price.id}`} className="contents">
-                                    <TableCell className="font-medium">{price.itemNo}</TableCell>
-                                    <TableCell className="font-medium">{price.inventory}</TableCell>
-                                    <TableCell>{price.brand}</TableCell>
-                                    <TableCell>{price.model}</TableCell>
-                                    <TableCell>{price.partNumber || "-"}</TableCell>
-                                    <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
-                                    <TableCell>{price.category}</TableCell>
-                                    <TableCell>{price.uom}</TableCell>
-                                    <TableCell className="text-right">1</TableCell>
-                                    <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">{price.buyingPrice.toFixed(2)}</TableCell>
-                                    <TableCell>{price.stockAvailability}</TableCell>
-                                    <TableCell>{price.warrantyInformation}</TableCell>
-                                    <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
-                                    <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
-                                    <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
-                                    <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
-                                    <TableCell><Badge variant={getReqst(price) === "None" ? "outline" : "default"}>{getReqst(price)}</Badge></TableCell>
-                                  </Link>
-                                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                    <Button size="sm" variant="outline" className="h-8" onClick={() => {
-                                      if (cartItems.find((c) => c.id === price.id)) {
-                                        removeFromCart(price.id)
-                                      } else {
-                                        addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status })
-                                      }
-                                    }}>
-                                      <ShoppingCart className="mr-2 h-4 w-4" />
-                                      {cartItems.find((c) => c.id === price.id) ? "Remove" : "Add to Cart"}
-                                    </Button>
+                   : viewMode === "by-brand" && grouped
+                     ? Object.entries(grouped)
+                         .sort(([a], [b]) => a.localeCompare(b))
+                         .map(([brand, items]) => {
+                           const isOpen = expandedGroups.has(`brand-${brand}`)
+                           return (
+                             <Fragment key={brand}>
+                               <TableRow className="bg-muted/50 cursor-pointer" onClick={() => toggleGroup(`brand-${brand}`)}>
+                                 <TableCell colSpan={22} className="font-semibold text-xs uppercase tracking-wider">
+                                   <div className="flex items-center gap-2">
+                                     {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                     {isOpen ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+                                     <span>{brand} ({items.length})</span>
+                                   </div>
+                                 </TableCell>
+                               </TableRow>
+                               {isOpen && items.map((price) => (
+                                 <TableRow key={price.id}>
+                                   <TableCell className="w-10">
+                                     <input
+                                       type="checkbox"
+                                       checked={selectedIds.has(price.id)}
+                                       onChange={() => toggleSelect(price.id)}
+                                       onClick={(e) => e.stopPropagation()}
+                                       className="h-4 w-4 rounded border-gray-300"
+                                     />
+                                   </TableCell>
+                                   <Link to={`/prices/${price.id}`} className="contents">
+                                     <TableCell className="font-medium">{price.itemNo}</TableCell>
+                                     <TableCell className="font-medium">{price.inventory}</TableCell>
+                                     <TableCell>{price.brand}</TableCell>
+                                     <TableCell>{price.model}</TableCell>
+                                     <TableCell>{price.partNumber || "-"}</TableCell>
+                                     <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
+                                     <TableCell>{price.category}</TableCell>
+                                     <TableCell>{price.uom}</TableCell>
+                                     <TableCell className="text-right">1</TableCell>
+                                     <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
+                                     <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
+                                     <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
+                                     <TableCell className="text-right">{price.buyingPrice.toFixed(2)}</TableCell>
+                                     <TableCell>{price.stockAvailability}</TableCell>
+                                     <TableCell>{price.warrantyInformation}</TableCell>
+                                     <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
+                                     <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
+                                     <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
+                                     <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
+                                      <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
+                                   </Link>
+                                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                     <Button size="sm" variant="outline" className="h-8" onClick={() => {
+                                       if (cartItems.find((c) => c.id === price.id)) {
+                                         removeFromCart(price.id)
+                                       } else {
+                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
+                                       }
+                                     }}>
+                                       <ShoppingCart className="mr-2 h-4 w-4" />
+                                       {cartItems.find((c) => c.id === price.id) ? "Remove" : "Add to Cart"}
+                                     </Button>
+                                   </TableCell>
+                                 </TableRow>
+                               ))}
+                             </Fragment>
+                            )
+                           })
+                     : viewMode === "by-reqst" && grouped
+                       ? Object.entries(grouped)
+                           .sort(([a], [b]) => a.localeCompare(b))
+                           .map(([reqst, items]) => {
+                            const isOpen = expandedGroups.has(`reqst-${reqst}`)
+                            return (
+                              <Fragment key={reqst}>
+                                <TableRow className="bg-muted/50 cursor-pointer" onClick={() => toggleGroup(`reqst-${reqst}`)}>
+                                  <TableCell colSpan={22} className="font-semibold text-xs uppercase tracking-wider">
+                                    <div className="flex items-center gap-2">
+                                      {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                      {isOpen ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
+                                      <span>{reqst} ({items.length})</span>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                                {isOpen && items.map((price) => (
+                                  <TableRow key={price.id}>
+                                    <TableCell className="w-10">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedIds.has(price.id)}
+                                        onChange={() => toggleSelect(price.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                      />
+                                    </TableCell>
+                                    <Link to={`/prices/${price.id}`} className="contents">
+                                      <TableCell className="font-medium">{price.itemNo}</TableCell>
+                                      <TableCell className="font-medium">{price.inventory}</TableCell>
+                                      <TableCell>{price.brand}</TableCell>
+                                      <TableCell>{price.model}</TableCell>
+                                      <TableCell>{price.partNumber || "-"}</TableCell>
+                                      <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
+                                      <TableCell>{price.category}</TableCell>
+                                      <TableCell>{price.uom}</TableCell>
+                                      <TableCell className="text-right">1</TableCell>
+                                      <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">{price.buyingPrice.toFixed(2)}</TableCell>
+                                      <TableCell>{price.stockAvailability}</TableCell>
+                                      <TableCell>{price.warrantyInformation}</TableCell>
+                                      <TableCell className="max-w-[200px] truncate" title={price.remarks}>{price.remarks}</TableCell>
+                                      <TableCell className="text-muted-foreground text-xs">{new Date(price.quoteDate).toLocaleDateString()}</TableCell>
+                                      <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
+                                      <TableCell><Badge variant={getBadgeVariant(price.status)}>{price.status}</Badge></TableCell>
+                                      <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
+                                    </Link>
+                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                      <Button size="sm" variant="outline" className="h-8" onClick={() => {
+                                        if (cartItems.find((c) => c.id === price.id)) {
+                                          removeFromCart(price.id)
+                                        } else {
+                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
+                                        }
+                                      }}>
+                                        <ShoppingCart className="mr-2 h-4 w-4" />
+                                        {cartItems.find((c) => c.id === price.id) ? "Remove" : "Add to Cart"}
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
                             </Fragment>
-                          ))
+                           )
+                          })
                       : (
                         <TableRow>
                           <TableCell colSpan={22} className="h-24 text-center">

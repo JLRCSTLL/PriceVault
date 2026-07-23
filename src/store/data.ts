@@ -23,6 +23,7 @@ export interface PriceRecord {
   quote_date: string
   expiry_date: string
   status: PriceStatus
+  reqst_number: string
 }
 
 export async function fetchPrices(): Promise<PriceRecord[]> {
@@ -57,6 +58,7 @@ export async function fetchPrices(): Promise<PriceRecord[]> {
     quoteDate: row.quote_date,
     expiryDate: row.expiry_date,
     status: (row.status as PriceStatus) || "Active",
+    reqstNumber: row.reqst_number || "",
   }))
 }
 
@@ -83,6 +85,7 @@ export async function createPriceRecord(record: Partial<PriceRecord>) {
       quote_date: record.quoteDate,
       expiry_date: record.expiryDate,
       status: record.status,
+      reqst_number: record.reqstNumber,
     })
     .select()
     .single()
