@@ -59,12 +59,10 @@ export function PriceDetail() {
             The requested price record does not exist.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/prices">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Price List
-          </Link>
-        </Button>
+        <Link to="/prices" className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium border border-border bg-background hover:bg-muted h-9 px-4 py-2">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Price List
+        </Link>
       </div>
     )
   }
@@ -99,11 +97,9 @@ export function PriceDetail() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-              <Link to="/prices">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
+            <Link to="/prices" className="inline-flex items-center justify-center hover:bg-muted h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
             <h2 className="text-2xl font-bold tracking-tight">
               {price.model}
             </h2>

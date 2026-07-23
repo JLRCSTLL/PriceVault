@@ -17,11 +17,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const root = window.document.documentElement
       
       const applyTheme = (effectiveTheme: "light" | "dark") => {
+        console.log("applyTheme called with:", effectiveTheme)
         setResolvedTheme(effectiveTheme)
         if (effectiveTheme === "dark") {
           root.classList.add("dark")
+          console.log("Added dark class")
         } else {
           root.classList.remove("dark")
+          console.log("Removed dark class")
         }
       }
 
@@ -52,8 +55,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const handleSetTheme = (newTheme: "light" | "dark" | "system") => {
-    setTheme(newTheme)
-    localStorage.setItem("price-vault-theme", newTheme)
+    try {
+      setTheme(newTheme)
+      localStorage.setItem("price-vault-theme", newTheme)
+    } catch (error) {
+      console.error("Failed to set theme:", error)
+    }
   }
 
   return (

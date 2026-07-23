@@ -35,7 +35,10 @@ export function Layout() {
   const { resolvedTheme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+    console.log("toggleTheme called, resolvedTheme:", resolvedTheme)
+    const next = resolvedTheme === "dark" ? "light" : "dark"
+    console.log("Setting theme to:", next)
+    setTheme(next)
   }
 
   return (
