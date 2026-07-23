@@ -10,7 +10,6 @@ import {
   LogOut,
   Vault,
   Users,
-  Shield,
   Moon,
   Sun,
 } from "lucide-react"
@@ -35,9 +34,9 @@ export function Layout() {
   const { resolvedTheme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    console.log("toggleTheme called, resolvedTheme:", resolvedTheme)
-    const next = resolvedTheme === "dark" ? "light" : "dark"
-    console.log("Setting theme to:", next)
+    const root = window.document.documentElement
+    const isDark = root.classList.contains("dark")
+    const next = isDark ? "light" : "dark"
     setTheme(next)
   }
 
