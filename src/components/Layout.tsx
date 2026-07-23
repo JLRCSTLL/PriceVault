@@ -18,6 +18,7 @@ import { cn } from "../lib/utils"
 import { useAuth } from "../store/auth"
 import { useTheme } from "../store/theme"
 import { Button } from "../components/ui/button"
+import { Badge } from "../components/ui/badge"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },

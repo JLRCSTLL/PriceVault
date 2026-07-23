@@ -21,19 +21,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadProfile(session.user.id)
-      } else {
+      try {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          loadProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Initial session load error:", error)
+        setUser(null)
+        setProfile(null)
         setLoading(false)
       }
+    }).catch((error) => {
+      console.error("Failed to get session:", error)
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await loadProfile(session.user.id)
-      } else {
+      try {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await loadProfile(session.user.id)
+        } else {
+          setProfile(null)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Auth state change error:", error)
+        setUser(null)
         setProfile(null)
         setLoading(false)
       }
@@ -43,30 +62,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const loadProfile = async (userId: string) => {
-    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
-    if (error || !data) {
-      const { data: authData } = await supabase.auth.getUser()
-      const email = authData.user?.email || ""
-      await supabase.from("profiles").upsert({
-        id: userId,
-        email,
-        full_name: "",
-        role: "user",
-        status: "pending",
-      })
-      setProfile({
-        id: userId,
-        email,
-        full_name: "",
-        role: "user",
-        status: "pending",
-        approved_at: null,
-        created_at: new Date().toISOString(),
-      })
-    } else {
-      setProfile(data as Profile)
+    try {
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+      if (error || !data) {
+        const { data: authData } = await supabase.auth.getUser()
+        const email = authData.user?.email || ""
+        await supabase.from("profiles").upsert({
+          id: userId,
+          email,
+          full_name: "",
+          role: "user",
+          status: "pending",
+        })
+        setProfile({
+          id: userId,
+          email,
+          full_name: "",
+          role: "user",
+          status: "pending",
+          approved_at: null,
+          created_at: new Date().toISOString(),
+        })
+      } else {
+        setProfile(data as Profile)
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error)
+      setProfile(null)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const signIn = async (email: string, password: string) => {

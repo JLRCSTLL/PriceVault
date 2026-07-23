@@ -13,33 +13,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light")
 
   useEffect(() => {
-    const root = window.document.documentElement
-    
-    const applyTheme = (effectiveTheme: "light" | "dark") => {
-      setResolvedTheme(effectiveTheme)
-      if (effectiveTheme === "dark") {
-        root.classList.add("dark")
-      } else {
-        root.classList.remove("dark")
-      }
-    }
-
-    if (theme === "system") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-      applyTheme(mediaQuery.matches ? "dark" : "light")
+    try {
+      const root = window.document.documentElement
       
-      const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? "dark" : "light")
-      mediaQuery.addEventListener("change", handler)
-      return () => mediaQuery.removeEventListener("change", handler)
-    } else {
-      applyTheme(theme)
+      const applyTheme = (effectiveTheme: "light" | "dark") => {
+        setResolvedTheme(effectiveTheme)
+        if (effectiveTheme === "dark") {
+          root.classList.add("dark")
+        } else {
+          root.classList.remove("dark")
+        }
+      }
+
+      if (theme === "system") {
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+        applyTheme(mediaQuery.matches ? "dark" : "light")
+        
+        const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? "dark" : "light")
+        mediaQuery.addEventListener("change", handler)
+        return () => mediaQuery.removeEventListener("change", handler)
+      } else {
+        applyTheme(theme)
+      }
+    } catch (error) {
+      console.error("Failed to apply theme:", error)
     }
   }, [theme])
 
   useEffect(() => {
-    const stored = localStorage.getItem("price-vault-theme")
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      setTheme(stored)
+    try {
+      const stored = localStorage.getItem("price-vault-theme")
+      if (stored === "light" || stored === "dark" || stored === "system") {
+        setTheme(stored)
+      }
+    } catch (error) {
+      console.error("Failed to read theme from localStorage:", error)
     }
   }, [])
 
