@@ -34,7 +34,12 @@ Without `PRICEVAULT_SAMPLE_DIR`, the private workbook tests are omitted. They ar
 
 ## Database prerequisite and remaining verification
 
-Apply `supabase/migrations/20260929_inventory_compatibility.sql` to the target test database. The checked-in original schema lacked the request number column, settings table and saved request item data. The migration also enables deleting one's own generated requests. This migration has not been applied to the live service.
+Apply these migrations in order to the target database:
+
+1. `supabase/migrations/20260929_inventory_compatibility.sql` adds the request number column, settings table and saved request item data, and enables deleting one's own generated requests.
+2. `supabase/migrations/20260930_user_management_security.sql` restricts profile reads and registration to the user's own account, and allows only approved administrators to manage profiles. Apply it before using user-management role or status controls.
+
+Neither migration has been verified against the live service.
 
 After signing in with an approved test account, verify:
 
@@ -46,4 +51,4 @@ After signing in with an approved test account, verify:
 6. Verify signup/email confirmation, pending/rejected account gating, admin approval/rejection, sign-out, theme switching and reports against actual test data.
 7. Force a database write failure and verify upload retains failed rows without retrying successful rows.
 
-These authenticated and database-dependent checks have not yet been completed. No live inventory was inserted or deleted. Historical markup prediction is not implemented; the UI now states that limitation instead of presenting fabricated confidence. Original database policies still allow public access to several tables, including profile updates; the frontend approval guard does not secure those APIs. Production authorization policies need separate validation before claiming access control is working end to end.
+These authenticated and database-dependent checks have not yet been completed. No live inventory was inserted or deleted. Historical markup prediction is not implemented; the UI now states that limitation instead of presenting fabricated confidence. The new migration secures profile policies, but other tables retain their existing public policies. Production authorization policies need separate validation before claiming access control is working end to end.
