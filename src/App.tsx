@@ -10,6 +10,7 @@ import { Settings } from "./pages/Settings"
 import { Login } from "./pages/Login"
 import { PriceDetail } from "./pages/PriceDetail"
 import { Signup } from "./pages/Signup"
+import { ForgotPassword, ResetPassword } from "./pages/PasswordRecovery"
 import { AdminUsers } from "./pages/AdminUsers"
 import { useAuth } from "./store/auth"
 
@@ -34,6 +35,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Layout />}>
           <Route index element={
             <ProtectedRoute><Dashboard /></ProtectedRoute>

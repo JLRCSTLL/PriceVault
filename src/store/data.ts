@@ -48,7 +48,7 @@ export async function createPriceRecord(record: Partial<PriceRecord>) {
       inventory: record.inventory,
       brand: record.brand,
       model: record.model,
-      part_number: record.partNumber,
+      ...(record.partNumber?.trim() ? { part_number: record.partNumber.trim() } : {}),
       description: record.description,
       category: record.category,
       uom: record.uom,
