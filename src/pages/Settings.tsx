@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
 import { fetchSettings, saveSetting } from "../store/data"
 
 interface Brand {
@@ -38,14 +37,15 @@ export function Settings() {
   }
 
   const handleSave = async () => {
+    if (!Number.isInteger(validityDays) || validityDays < 1) { alert("Validity must be a positive whole number of days."); return }
     setSaving(true)
-    await Promise.all([
+    const results = await Promise.all([
       saveSetting("brands", brands),
       saveSetting("categories", categories),
       saveSetting("validityDays", validityDays),
     ])
     setSaving(false)
-    alert("Settings saved!")
+    alert(results.every(Boolean) ? "Settings saved!" : "Some settings could not be saved. Please retry.")
   }
 
   const addBrand = () => {

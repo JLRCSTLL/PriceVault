@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { createGeneratedRequest } from "../store/data"
+import { useAuth } from "../store/auth"
 import {
   Card,
   CardContent,
@@ -22,14 +24,18 @@ import { useCart } from "../store/cart"
 export function RequestCart() {
   const { items, removeFromCart, updateItem, clearCart } = useCart()
 
-  const handleGenerate = () => {
+  const { user } = useAuth()
+  const [generating, setGenerating] = useState(false)
+  const handleGenerate = async () => {
+    setGenerating(true)
+    try {
     const data = items.map((item) => ({
       Inventory: item.inventory,
       Description: item.description,
       UOM: item.uom,
-      "Order Qty.": 1,
-      "Est. Unit Cost": (item.buyingPrice || item.varPrice).toFixed(2),
-      "Est. Ext. Cost": (item.buyingPrice || item.varPrice).toFixed(2),
+      "Order Qty.": item.orderQty,
+      "Est. Unit Cost": item.buyingPrice || item.varPrice,
+      "Est. Ext. Cost": (item.buyingPrice || item.varPrice) * item.orderQty,
       "Required Date": item.requiredDate,
       "Promised Date": item.promisedDate,
       "Issue Status": item.issueStatus,
@@ -43,7 +49,12 @@ export function RequestCart() {
     const worksheet = XLSX.utils.json_to_sheet(data)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Request Form")
-    XLSX.writeFile(workbook, `Request-Form-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    const requestNumber = `REQ-${crypto.randomUUID()}`
+    const saved = await createGeneratedRequest({ request_number: requestNumber, generated_by: user.id, item_count: items.length, items: data })
+    if (!saved) throw new Error("Could not save request history. Please retry.")
+    XLSX.writeFile(workbook, `${requestNumber}.xlsx`)
+    } catch (error) { alert(error instanceof Error ? error.message : "Could not generate request.") }
+    finally { setGenerating(false) }
   }
 
   return (
@@ -61,7 +72,7 @@ export function RequestCart() {
               Clear Cart
             </Button>
           )}
-          <Button onClick={handleGenerate} disabled={items.length === 0}>
+          <Button onClick={handleGenerate} disabled={items.length === 0 || generating}>
             <FileDown className="mr-2 h-4 w-4" />
             Generate Excel
           </Button>
@@ -105,12 +116,12 @@ export function RequestCart() {
                     </TableCell>
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{item.uom}</TableCell>
-                    <TableCell>1</TableCell>
+                    <TableCell><input aria-label={`Quantity for ${item.description}`} type="number" min="0" step="1" value={item.orderQty} onChange={e => { const qty = Number(e.target.value); if (Number.isInteger(qty) && qty >= 0) updateItem(item.id, { orderQty: qty }) }} className="w-16 border rounded px-2" /></TableCell>
                     <TableCell className="text-right">
                       {(item.buyingPrice || item.varPrice).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {(item.buyingPrice || item.varPrice).toFixed(2)}
+                      {((item.buyingPrice || item.varPrice) * item.orderQty).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <input

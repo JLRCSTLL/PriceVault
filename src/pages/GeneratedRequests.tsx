@@ -1,3 +1,4 @@
+import * as XLSX from "xlsx"
 import { useState, useEffect } from "react"
 import {
   Card,
@@ -26,6 +27,7 @@ interface GeneratedRequest {
   generated_at: string
   file_path: string
   status: string
+  items?: Record<string, unknown>[]
   item_count: number
 }
 
@@ -46,12 +48,15 @@ export function GeneratedRequests() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this request?")) return
-    await deleteGeneratedRequest(id)
+    if (!await deleteGeneratedRequest(id)) { alert("Could not delete request."); return }
     loadRequests()
   }
 
   const handleDownload = (req: GeneratedRequest) => {
-    alert(`Downloading ${req.request_number}`)
+    if (!req.items?.length) { alert("This older request has no saved spreadsheet data."); return }
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(req.items), "Request Form")
+    XLSX.writeFile(workbook, `${req.request_number}.xlsx`)
   }
 
   const getStatusVariant = (status: string) => {

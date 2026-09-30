@@ -24,7 +24,7 @@ export function PriceList() {
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
-  const { addToCart, removeFromCart, updateQty, items: cartItems } = useCart()
+  const { addToCart, removeFromCart, items: cartItems } = useCart()
 
   useEffect(() => {
     loadPrices()
@@ -62,7 +62,7 @@ export function PriceList() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filtered.length && filtered.length > 0) {
+    if (filtered.every(p => selectedIds.has(p.id)) && filtered.length > 0) {
       setSelectedIds(new Set())
     } else {
       setSelectedIds(new Set(filtered.map((p) => p.id)))
@@ -73,7 +73,8 @@ export function PriceList() {
     if (!confirm(`Delete ${selectedIds.size} selected item(s)?`)) return
 
     const deletePromises = Array.from(selectedIds).map((id) => deletePriceRecord(id))
-    await Promise.all(deletePromises)
+    const results = await Promise.all(deletePromises)
+    if (results.some(result => !result)) alert("Some records could not be deleted. Please retry.")
 
     setSelectedIds(new Set())
     loadPrices()
@@ -124,11 +125,6 @@ export function PriceList() {
             return acc
           }, {})
         : null
-
-  const getGroupLabel = (key: string) => {
-    if (viewMode === "by-brand") return key
-    return key
-  }
 
   if (loading) {
     return <div className="p-4">Loading...</div>
@@ -220,7 +216,7 @@ export function PriceList() {
                 <TableHead className="w-10">
                   <input
                     type="checkbox"
-                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    checked={filtered.length > 0 && filtered.every(p => selectedIds.has(p.id))}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-gray-300"
                   />
@@ -261,12 +257,12 @@ export function PriceList() {
                             className="h-4 w-4 rounded border-gray-300"
                           />
                         </TableCell>
-                         <Link to={`/prices/${price.id}`} className="contents">
+                         <>
                             <TableCell className="font-medium">
                              {price.itemNo}
                            </TableCell>
                            <TableCell className="font-medium">
-                             {price.inventory}
+                             <Link to={`/prices/${price.id}`} className="underline">{price.inventory}</Link>
                            </TableCell>
                            <TableCell>
                             {price.brand}
@@ -286,7 +282,7 @@ export function PriceList() {
                           <TableCell>{price.category}</TableCell>
                           <TableCell>{price.uom}</TableCell>
                            <TableCell className="text-right">
-                             1
+                             {price.orderQty}
                            </TableCell>
                           <TableCell className="text-right">
                             {price.varPrice.toFixed(2)}
@@ -324,7 +320,7 @@ export function PriceList() {
                               {price.reqstNumber || "None"}
                             </Badge>
                           </TableCell>
-                         </Link>
+                         </>
                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                            <Button
                              size="sm"
@@ -344,7 +340,7 @@ export function PriceList() {
                                     partNumber: price.partNumber,
                                     category: price.category,
                                     uom: price.uom,
-                                    orderQty: 1,
+                                    orderQty: price.orderQty,
                                     varPrice: price.varPrice,
                                     srpPrice: price.srpPrice,
                                     lpPrice: price.lpPrice,
@@ -393,16 +389,16 @@ export function PriceList() {
                                        className="h-4 w-4 rounded border-gray-300"
                                      />
                                    </TableCell>
-                                   <Link to={`/prices/${price.id}`} className="contents">
+                                   <>
                                      <TableCell className="font-medium">{price.itemNo}</TableCell>
-                                     <TableCell className="font-medium">{price.inventory}</TableCell>
+                                     <TableCell className="font-medium"><Link to={`/prices/${price.id}`} className="underline">{price.inventory}</Link></TableCell>
                                      <TableCell>{price.brand}</TableCell>
                                      <TableCell>{price.model}</TableCell>
                                      <TableCell>{price.partNumber || "-"}</TableCell>
                                      <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
                                      <TableCell>{price.category}</TableCell>
                                      <TableCell>{price.uom}</TableCell>
-                                     <TableCell className="text-right">1</TableCell>
+                                     <TableCell className="text-right">{price.orderQty}</TableCell>
                                      <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
                                      <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
                                      <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
@@ -414,13 +410,13 @@ export function PriceList() {
                                      <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
                                      <TableCell><span className={getStatusColorClass(price.status)}>{price.status}</span></TableCell>
                                       <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
-                                   </Link>
+                                   </>
                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                      <Button size="sm" variant="outline" className="h-8" onClick={() => {
                                        if (cartItems.find((c) => c.id === price.id)) {
                                          removeFromCart(price.id)
                                        } else {
-                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
+                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: price.orderQty, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
                                        }
                                      }}>
                                        <ShoppingCart className="mr-2 h-4 w-4" />
@@ -459,16 +455,16 @@ export function PriceList() {
                                         className="h-4 w-4 rounded border-gray-300"
                                       />
                                     </TableCell>
-                                    <Link to={`/prices/${price.id}`} className="contents">
+                                    <>
                                       <TableCell className="font-medium">{price.itemNo}</TableCell>
-                                      <TableCell className="font-medium">{price.inventory}</TableCell>
+                                      <TableCell className="font-medium"><Link to={`/prices/${price.id}`} className="underline">{price.inventory}</Link></TableCell>
                                       <TableCell>{price.brand}</TableCell>
                                       <TableCell>{price.model}</TableCell>
                                       <TableCell>{price.partNumber || "-"}</TableCell>
                                       <TableCell className="max-w-[250px] truncate" title={price.description}>{price.description}</TableCell>
                                       <TableCell>{price.category}</TableCell>
                                       <TableCell>{price.uom}</TableCell>
-                                      <TableCell className="text-right">1</TableCell>
+                                      <TableCell className="text-right">{price.orderQty}</TableCell>
                                       <TableCell className="text-right">{price.varPrice.toFixed(2)}</TableCell>
                                       <TableCell className="text-right">{price.srpPrice.toFixed(2)}</TableCell>
                                       <TableCell className="text-right">{price.lpPrice.toFixed(2)}</TableCell>
@@ -480,13 +476,13 @@ export function PriceList() {
                                       <TableCell className="text-muted-foreground text-xs">{new Date(price.expiryDate).toLocaleDateString()}</TableCell>
                                       <TableCell><span className={getStatusColorClass(price.status)}>{price.status}</span></TableCell>
                                       <TableCell><Badge variant={price.reqstNumber ? "default" : "outline"}>{price.reqstNumber || "None"}</Badge></TableCell>
-                                    </Link>
+                                    </>
                                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                       <Button size="sm" variant="outline" className="h-8" onClick={() => {
                                         if (cartItems.find((c) => c.id === price.id)) {
                                           removeFromCart(price.id)
                                         } else {
-                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: 1, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
+                                          addToCart({ id: price.id, itemNo: price.itemNo, inventory: price.inventory, description: price.description, brand: price.brand, model: price.model, partNumber: price.partNumber, category: price.category, uom: price.uom, orderQty: price.orderQty, varPrice: price.varPrice, srpPrice: price.srpPrice, lpPrice: price.lpPrice, buyingPrice: price.buyingPrice, stockAvailability: price.stockAvailability, warrantyInformation: price.warrantyInformation, remarks: price.remarks, quoteDate: price.quoteDate, expiryDate: price.expiryDate, status: price.status, reqstNumber: price.reqstNumber })
                                         }
                                       }}>
                                         <ShoppingCart className="mr-2 h-4 w-4" />

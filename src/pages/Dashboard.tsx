@@ -34,13 +34,8 @@ export function Dashboard() {
   const noOfferCount = prices.filter((p) => p.status === "No Offer").length
   const eolCount = prices.filter((p) => p.status === "EOL").length
 
-  const chartData = [
-    { name: "Epson", requests: 12 },
-    { name: "Panasonic", requests: 19 },
-    { name: "Sony", requests: 8 },
-    { name: "DJI", requests: 15 },
-    { name: "Canon", requests: 5 },
-  ]
+  const counts = prices.reduce<Record<string, number>>((acc, price) => { acc[price.brand] = (acc[price.brand] || 0) + 1; return acc }, {})
+  const chartData = Object.entries(counts).map(([name, requests]) => ({ name, requests })).sort((a, b) => b.requests - a.requests).slice(0, 5)
 
   if (loading) {
     return <div className="p-4">Loading...</div>
@@ -127,7 +122,7 @@ export function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Most Requested Brands</CardTitle>
+            <CardTitle>Inventory by Brand</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">

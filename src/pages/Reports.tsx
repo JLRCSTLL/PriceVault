@@ -17,7 +17,6 @@ import {
   LineChart,
   Line,
 } from "recharts"
-import { Badge } from "../components/ui/badge"
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react"
 import { fetchPrices, fetchGeneratedRequests } from "../store/data"
 
@@ -40,7 +39,7 @@ export function Reports() {
 
   const totalActive = prices.filter((p) => p.status === "Active").length
   const totalExpired = prices.filter((p) => p.status === "Expired").length
-  const totalValue = prices.reduce((sum, p) => sum + (p.varPrice || 0), 0)
+  const totalValue = prices.filter(p => p.status === "Active").reduce((sum, p) => sum + (p.varPrice || 0), 0)
 
   const brandData = prices.reduce<Record<string, number>>((acc, p) => {
     acc[p.brand] = (acc[p.brand] || 0) + 1
@@ -51,21 +50,13 @@ export function Reports() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
 
-  const categoryData = prices.reduce<Record<string, number>>((acc, p) => {
-    const cat = p.category || "Uncategorized"
-    acc[cat] = (acc[cat] || 0) + 1
-    return acc
-  }, {})
-  const categoryChartData = Object.entries(categoryData)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-
   const monthlyData = requests.reduce<Record<string, number>>((acc, req) => {
-    const month = new Date(req.generated_at).toLocaleString("default", { month: "short" })
+    const month = new Date(req.generated_at).toISOString().slice(0, 7)
     acc[month] = (acc[month] || 0) + 1
     return acc
   }, {})
   const monthlyChartData = Object.entries(monthlyData)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, requests]) => ({ month, requests }))
     .slice(-6)
 

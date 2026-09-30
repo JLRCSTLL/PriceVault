@@ -7,3 +7,5 @@ dist
 .kilo
 REQST002262.xlsx
 EWS_RTU.xlsx
+
+.pnpm-store/

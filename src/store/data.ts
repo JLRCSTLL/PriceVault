@@ -1,30 +1,8 @@
+import { priceStatus } from "../lib/priceStatus"
 import { supabase } from "../lib/supabase"
 
-export type PriceStatus = "Active" | "Expiring Soon" | "Expired" | "No Offer" | "EOL"
-
-export interface PriceRecord {
-  id: string
-  item_no: string
-  inventory: string
-  brand: string
-  model: string
-  part_number: string
-  description: string
-  category: string
-  uom: string
-  order_qty: number
-  var_price: number
-  srp_price: number
-  lp_price: number
-  buying_price: number
-  stock_availability: string
-  warranty_information: string
-  remarks: string
-  quote_date: string
-  expiry_date: string
-  status: PriceStatus
-  reqst_number: string
-}
+import type { PriceRecord, PriceStatus } from "../types"
+export type { PriceRecord, PriceStatus } from "../types"
 
 export async function fetchPrices(): Promise<PriceRecord[]> {
   const { data, error } = await supabase
@@ -47,7 +25,7 @@ export async function fetchPrices(): Promise<PriceRecord[]> {
     description: row.description,
     category: row.category || "",
     uom: row.uom || "Unit",
-    orderQty: row.order_qty || 1,
+    orderQty: row.order_qty ?? 1,
     varPrice: Number(row.var_price) || 0,
     srpPrice: Number(row.srp_price) || 0,
     lpPrice: Number(row.lp_price) || 0,
@@ -57,7 +35,7 @@ export async function fetchPrices(): Promise<PriceRecord[]> {
     remarks: row.remarks || "",
     quoteDate: row.quote_date,
     expiryDate: row.expiry_date,
-    status: (row.status as PriceStatus) || "Active",
+    status: priceStatus((row.status as PriceStatus) || "Active", row.expiry_date),
     reqstNumber: row.reqst_number || "",
   }))
 }

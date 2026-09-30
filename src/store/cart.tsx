@@ -6,6 +6,7 @@ export interface CartItem {
   inventory: string
   description: string
   brand: string
+  partNumber?: string
   model: string
   category: string
   uom: string
@@ -32,9 +33,10 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[]
-  addToCart: (item: Omit<CartItem, "projectId">) => void
+  addToCart: (item: Omit<CartItem, "projectId" | "projectTask" | "requisitionRefNbr" | "requiredDate" | "promisedDate" | "issueStatus" | "canceled">) => void
   removeFromCart: (id: string) => void
   updateQty: (id: string, qty: number) => void
+  updateItem: (id: string, updates: Partial<CartItem>) => void
   clearCart: () => void
   isInCart: (id: string) => boolean
 }
@@ -49,7 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (prev.find((i) => i.id === item.id)) return prev
       return [...prev, { 
         ...item, 
-        orderQty: 1,
+        orderQty: item.orderQty,
         projectId: "",
         projectTask: "",
         requisitionRefNbr: "",
@@ -65,9 +67,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => i.id !== id))
   }
 
-  const updateQty = (_id: string, qty: number) => {
+  const updateQty = (id: string, qty: number) => {
     setItems((prev) =>
-      prev.map((item) => ({ ...item, orderQty: 1 })),
+      prev.map((item) => item.id === id && Number.isInteger(qty) && qty >= 0 ? { ...item, orderQty: qty } : item),
     )
   }
 

@@ -5,6 +5,7 @@ export interface PriceRecord {
   itemNo: string
   inventory: string
   brand: string
+  partNumber?: string
   model: string
   description: string
   category: string

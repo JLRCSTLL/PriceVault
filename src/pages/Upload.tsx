@@ -7,27 +7,10 @@ import {
   CardDescription,
 } from "../components/ui/card"
 import { Button } from "../components/ui/button"
-import { Badge } from "../components/ui/badge"
 import { UploadCloud, FileType, CheckCircle, AlertCircle, X } from "lucide-react"
 import * as XLSX from "xlsx"
-import { createPriceRecord } from "../store/data"
-import type { PriceRecord } from "../types"
-
-interface ParsedRow {
-  row: number
-  itemNo: string
-  inventory: string
-  description: string
-  varPrice: number
-  srpPrice: number
-  lpPrice: number
-  brand: string
-  model: string
-  orderQty: number
-  uom: string
-  stockAvailability: string
-  partNumber?: string
-}
+import { createPriceRecord, fetchSettings } from "../store/data"
+import { parsePriceWorkbook, extractReqstNumber, type ParsedRow } from "../lib/importPrices"
 
 export function Upload() {
   const [dragActive, setDragActive] = useState(false)
@@ -64,10 +47,11 @@ export function Upload() {
   }
 
   const handleFile = (selectedFile: File) => {
+    if (isProcessing) return
     if (
-      selectedFile.name.endsWith(".xlsx") ||
-      selectedFile.name.endsWith(".xls") ||
-      selectedFile.name.endsWith(".csv")
+      selectedFile.name.toLowerCase().endsWith(".xlsx") ||
+      selectedFile.name.toLowerCase().endsWith(".xls") ||
+      selectedFile.name.toLowerCase().endsWith(".csv")
     ) {
       setFile(selectedFile)
       parseExcel(selectedFile)
@@ -76,155 +60,20 @@ export function Upload() {
     }
   }
 
-  const extractReqstNumber = (filename: string): string => {
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "")
-    const match = nameWithoutExt.match(/REQST[-_]?([A-Z0-9\-]+)/i)
-    if (match && match[1]) {
-      return `REQST-${match[1]}`
+  const parseExcel = async (selectedFile: File) => {
+    setIsProcessing(true)
+    setParsedRows([])
+    setShowPreview(false)
+    try {
+      const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array" })
+      setParsedRows(parsePriceWorkbook(workbook))
+      setShowPreview(true)
+    } catch (error) {
+      setFile(null)
+      alert(error instanceof Error ? error.message : "Could not read the file.")
+    } finally {
+      setIsProcessing(false)
     }
-    const fallback = nameWithoutExt.match(/(REQST|REQ)[-_]?([A-Z0-9]+)/i)
-    if (fallback && fallback[2]) {
-      return `REQST-${fallback[2]}`
-    }
-    return `REQST-${nameWithoutExt}`
-  }
-
-  const parseExcel = (selectedFile: File) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result
-        const workbook = XLSX.read(data, { type: "binary" })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const raw = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "" })
-
-        if (!raw || raw.length === 0) {
-          alert("Excel file appears to be empty.")
-          return
-        }
-
-        const headerRowIndex = raw.findIndex((row) => {
-          const values = row.map((v) => String(v ?? "").trim().toLowerCase())
-          const score = values.filter((v) => /item\s*no\.?|inventory|description|order\s*qty\.?|uom|var|srp|lp|stock|warranty|remarks|brand|part\s*#|model|specification|unit\s*price|total\s*price|price\s*or\s*mark\s*up/i.test(v)).length
-          return score >= 3
-        })
-
-        const dataStartIndex = headerRowIndex >= 0 ? headerRowIndex + 1 : 1
-        const headerRow = (raw[headerRowIndex] || raw[0]).map((h: any) => String(h ?? "").trim().toLowerCase())
-        const dataRows = raw.slice(dataStartIndex)
-
-        console.log("Upload headers:", headerRow)
-        console.log("Upload sample row:", dataRows[0])
-
-        const col = (names: string[]) => {
-          for (const name of names) {
-            const idx = headerRow.findIndex((h) => h === name.toLowerCase())
-            if (idx !== -1) return idx
-          }
-          return -1
-        }
-
-        const itemNoIdx = col(["item no.", "itemno", "item_no", "item"])
-        const inventoryIdx = col(["inventory", "inventory no", "inventory_no"])
-        const descriptionIdx = col(["description", "desc", "item description", "specification"])
-        const varPriceIdx = col(["var/per unit", "var_price", "varprice", "var", "unit price"])
-        const srpPriceIdx = col(["srp/per unit", "srp_price", "srpprice", "srp", "total price"])
-        const lpPriceIdx = col(["lp/per unit", "lp_price", "lpprice", "lp"])
-        const orderQtyIdx = col(["order qty.", "order_qty", "orderqty", "qty"])
-        const uomIdx = col(["uom", "unit"])
-        const stockIdx = col(["stock availability", "stock_availability", "stockavailability"])
-
-        const brandIdx = col(["brand"])
-        const modelIdx = col(["model", "part #"])
-        const partIdx = col(["part #"])
-
-        const isEwsFormat = brandIdx >= 0 && modelIdx >= 0
-
-        const rows: ParsedRow[] = dataRows.map((row, index) => {
-          const description = String(row[descriptionIdx] ?? "").trim()
-          const itemNo = String(row[itemNoIdx] ?? `ROW-${index + 2}`).trim()
-          const inventory = String(row[inventoryIdx] ?? `INV-${index + 2}`).trim()
-          const varPrice = Number(row[varPriceIdx] || 0)
-          const srpPrice = Number(row[srpPriceIdx] || 0)
-          const lpPrice = Number(row[lpPriceIdx] || 0)
-          const orderQty = Number(row[orderQtyIdx] || 1)
-          const uom = String(row[uomIdx] || "Unit").trim()
-          const stockAvailability = String(row[stockIdx] || "Unknown").trim()
-          const partNumber = partIdx >= 0 ? String(row[partIdx] ?? "").trim() : undefined
-
-          let brand = "Unknown"
-          let model = "Unknown"
-
-          if (isEwsFormat) {
-            brand = String(row[brandIdx] ?? "Unknown").trim()
-            model = String(row[modelIdx] ?? "Unknown").trim()
-          } else {
-            const stopWords = new Set([
-              "the","and","for","with","of","in","on","at","to","a","an","is","it","he","she","we","you","me","him","her","us","them","this","that","these","those","i","we","you","he","she","it","they","my","your","his","its","our","their","what","which","who","when","where","why","how","all","each","every","both","few","more","most","other","some","such","no","nor","not","only","own","same","so","than","too","very","can","will","just","don","should","now","d","ll","m","re","ve","y","t","s","st","nd","rd","th"
-            ])
-
-            const firstWord = description.split(/\s+/)[0]
-            brand = firstWord.length >= 2 && /[A-Za-z]/.test(firstWord) && !stopWords.has(firstWord.toLowerCase()) ? firstWord : "Unknown"
-            
-            const afterBrand = brand !== "Unknown" ? description.slice(description.toLowerCase().indexOf(brand.toLowerCase()) + brand.length).trim() : description
-            
-            const fruMatch = afterBrand.match(/FRU:\s*([A-Z0-9\/]+)/i)
-            if (fruMatch) {
-              model = fruMatch[1]
-            } else {
-              const tokens = afterBrand.split(/\s+/)
-              const meaningfulTokens = tokens.filter((token) => {
-                const cleaned = token.replace(/[^A-Za-z0-9\-./]/g, "")
-                if (!cleaned || cleaned.length < 2 || stopWords.has(cleaned.toLowerCase())) return false
-                return /[0-9]/.test(cleaned) || /^[A-Z]{2,}/.test(cleaned) || cleaned.length >= 4
-              })
-              
-              if (meaningfulTokens.length >= 2) {
-                model = `${meaningfulTokens[0]} ${meaningfulTokens[1]}`.replace(/[^A-Za-z0-9\-./\s]/g, "").trim()
-              } else if (meaningfulTokens.length === 1) {
-                model = meaningfulTokens[0].replace(/[^A-Za-z0-9\-./]/g, "")
-              }
-            }
-            
-            if (model === "Unknown") {
-              const fallbackMatch = description.match(/([A-Z0-9]{2,}(?:-[A-Z0-9]+)+)/)
-              if (fallbackMatch) {
-                model = fallbackMatch[1]
-              }
-            }
-          }
-
-           return {
-             row: index + 2,
-             itemNo,
-             inventory,
-             description,
-             varPrice,
-             srpPrice,
-             lpPrice,
-             brand,
-             model,
-             orderQty,
-             uom,
-             stockAvailability,
-             partNumber,
-           }
-        }).filter((row) => {
-          if (!row.description || row.description.length < 3) return false
-          if (row.varPrice <= 0 && row.srpPrice <= 0 && row.lpPrice <= 0) return false
-          if (/this part is to be fill-up|for bidding and price tagging|end-user|contact person|designation|contact number|email address|website|project name|timeline of closing|estimated budget/i.test(row.description)) return false
-          return true
-        })
-
-        setParsedRows(rows)
-        setShowPreview(true)
-      } catch (err) {
-        console.error("Failed to parse Excel:", err)
-        alert("Failed to parse Excel file. Please check the format.")
-      }
-    }
-    reader.readAsBinaryString(selectedFile)
   }
 
   const handleImport = async () => {
@@ -232,11 +81,12 @@ export function Upload() {
     try {
       const today = new Date()
       const expiryDate = new Date(today)
-      expiryDate.setDate(expiryDate.getDate() + 30)
+      const settings = await fetchSettings()
+      expiryDate.setDate(expiryDate.getDate() + (Number(settings.validityDays) > 0 ? Number(settings.validityDays) : 30))
 
       const reqstNumber = file ? extractReqstNumber(file.name) : ""
 
-      const results = await Promise.all(
+      const outcomes = await Promise.allSettled(
         parsedRows.map(async (row) => {
           return createPriceRecord({
             itemNo: row.itemNo,
@@ -248,18 +98,28 @@ export function Upload() {
             varPrice: row.varPrice,
             srpPrice: row.srpPrice || 0,
             lpPrice: row.lpPrice || 0,
-            orderQty: 1,
+            orderQty: row.orderQty,
+            warrantyInformation: row.warrantyInformation,
+            remarks: row.remarks,
+            category: row.category,
+            buyingPrice: row.buyingPrice,
             uom: row.uom,
             stockAvailability: row.stockAvailability,
             quoteDate: today.toISOString(),
             expiryDate: expiryDate.toISOString(),
-            status: "Active",
+            status: row.status,
             reqstNumber,
           })
         })
       )
 
+      const results = outcomes.map(result => result.status === "fulfilled" ? result.value : null)
       const successCount = results.filter((r) => r !== null).length
+      if (successCount !== parsedRows.length) {
+        setParsedRows(parsedRows.filter((_, index) => results[index] === null))
+        alert(`Imported ${successCount} records. ${parsedRows.length - successCount} failed. Failed rows remain available to retry.`)
+        return
+      }
       alert(`Successfully imported ${successCount} records!`)
       setFile(null)
       setParsedRows([])
@@ -315,8 +175,7 @@ export function Upload() {
                 Click or drag file to this area to upload
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm mb-6">
-                Support for a single or bulk upload. Strictly prohibit from
-                uploading company data or other band files.
+                Select one Excel or CSV file. Zero-price inventory items are retained as No Offer.
               </p>
               <input
                 ref={inputRef}
@@ -341,7 +200,7 @@ export function Upload() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleCancel}>
+                <Button variant="ghost" size="icon" onClick={handleCancel} disabled={isProcessing}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -359,12 +218,12 @@ export function Upload() {
                        <th className="px-3 py-2 text-right">VAR</th>
                        <th className="px-3 py-2 text-right">SRP</th>
                        <th className="px-3 py-2 text-right">LP</th>
-                       <th className="px-3 py-2 text-left">Stock</th>
+                       <th className="px-3 py-2 text-left">Qty</th><th className="px-3 py-2 text-left">Status</th><th className="px-3 py-2 text-left">Stock</th>
                      </tr>
                    </thead>
                    <tbody>
                      {parsedRows.slice(0, 50).map((row) => (
-                       <tr key={row.row} className="border-t">
+                       <tr key={`${row.sheet}-${row.row}`} className="border-t">
                          <td className="px-3 py-2 text-xs text-muted-foreground">{row.row}</td>
                          <td className="px-3 py-2">{row.inventory}</td>
                          <td className="px-3 py-2 max-w-[200px] truncate">{row.description}</td>
@@ -374,7 +233,7 @@ export function Upload() {
                           <td className="px-3 py-2 text-right">{row.varPrice.toFixed(2)}</td>
                           <td className="px-3 py-2 text-right">{row.srpPrice.toFixed(2)}</td>
                           <td className="px-3 py-2 text-right">{row.lpPrice.toFixed(2)}</td>
-                         <td className="px-3 py-2">{row.stockAvailability}</td>
+                         <td className="px-3 py-2">{row.orderQty}</td><td className="px-3 py-2">{row.status}</td><td className="px-3 py-2">{row.stockAvailability}</td>
                        </tr>
                      ))}
                    </tbody>
@@ -385,7 +244,7 @@ export function Upload() {
                 <Button variant="outline" onClick={handleCancel} disabled={isProcessing}>
                   Cancel
                 </Button>
-                <Button onClick={handleImport} disabled={isProcessing}>
+                <Button onClick={handleImport} disabled={isProcessing || !parsedRows.length}>
                   {isProcessing ? "Importing..." : `Import ${parsedRows.length} Records`}
                 </Button>
               </div>
@@ -446,7 +305,7 @@ export function Upload() {
                 <CheckCircle className="h-4 w-4 text-emerald-500" /> VAR/PER UNIT / Unit Price
               </div>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-500" /> SRP/PER UNIT / Total Price
+                <AlertCircle className="h-4 w-4 text-orange-500" /> SRP/PER UNIT
               </div>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-orange-500" /> Order Qty.

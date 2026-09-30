@@ -6,7 +6,6 @@ import {
   CardTitle,
   CardDescription,
 } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { fetchPrices } from "../store/data"
 import { useState, useEffect } from "react"
@@ -22,15 +21,10 @@ import {
 } from "recharts"
 import { useCart } from "../store/cart"
 
-const historyData = [
-  { date: "2024-01", var: 1200, srp: 1500 },
-  { date: "2024-02", var: 1250, srp: 1550 },
-  { date: "2024-03", var: 1200, srp: 1500 },
-]
-
 export function PriceDetail() {
   const { id } = useParams()
   const [price, setPrice] = useState<any>(null)
+  const [historyData, setHistoryData] = useState<{ date: string; var: number; srp: number }[]>([])
   const [loading, setLoading] = useState(true)
   const { addToCart, removeFromCart, items: cartItems } = useCart()
 
@@ -43,6 +37,9 @@ export function PriceDetail() {
     const data = await fetchPrices()
     const found = data.find((p) => p.id === id)
     setPrice(found)
+    setHistoryData(found ? data.filter(p => p.description === found.description && p.brand === found.brand)
+      .sort((a, b) => Date.parse(a.quoteDate) - Date.parse(b.quoteDate))
+      .map(p => ({ date: new Date(p.quoteDate).toLocaleDateString(), var: p.varPrice, srp: p.srpPrice })) : [])
     setLoading(false)
   }
 
@@ -124,7 +121,7 @@ export function PriceDetail() {
                 partNumber: price.partNumber,
                 category: price.category,
                 uom: price.uom,
-                orderQty: 1,
+                orderQty: price.orderQty,
                 varPrice: price.varPrice,
                 srpPrice: price.srpPrice,
                 lpPrice: price.lpPrice,
@@ -135,6 +132,7 @@ export function PriceDetail() {
                 quoteDate: price.quoteDate,
                 expiryDate: price.expiryDate,
                 status: price.status,
+                reqstNumber: price.reqstNumber,
               })
             }
           }}
@@ -253,32 +251,8 @@ export function PriceDetail() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Markup Prediction</CardTitle>
-          <CardDescription>
-            Estimated prices based on historical markup patterns.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Predicted VAR</p>
-              <p className="text-lg font-bold">
-                ${(price.buyingPrice * (1 + markup.var / 100)).toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Predicted SRP</p>
-              <p className="text-lg font-bold">
-                ${(price.buyingPrice * (1 + markup.srp / 100)).toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground mb-1">Confidence</p>
-              <p className="text-lg font-bold text-emerald-600">High</p>
-            </div>
-          </div>
-        </CardContent>
+        <CardHeader><CardTitle>Markup estimates</CardTitle></CardHeader>
+        <CardContent><p className="text-sm text-muted-foreground">Historical markup predictions are not available. The markup percentages above use this record's buying price.</p></CardContent>
       </Card>
     </div>
   )

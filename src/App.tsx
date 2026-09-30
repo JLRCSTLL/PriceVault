@@ -14,9 +14,16 @@ import { AdminUsers } from "./pages/AdminUsers"
 import { useAuth } from "./store/auth"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+<<<<<<< ours
   const { user, loading } = useAuth()
   if (loading) return <div className="p-4">Loading...</div>
   if (!user) return <Navigate to="/login" replace />
+=======
+  const { user, profile, loading } = useAuth()
+  if (loading) return <div className="p-4">Loading...</div>
+  if (!user) return <Navigate to="/login" replace />
+  if (profile?.status !== "approved") return <div role="alert" className="p-4">{profile?.status === "rejected" ? "Your account request was rejected. Contact an administrator." : "Your account is awaiting administrator approval."}</div>
+>>>>>>> theirs
   return <>{children}</>
 }
 
