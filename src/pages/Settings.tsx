@@ -4,72 +4,167 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { fetchSettings, saveSetting } from "../store/data"
 
-interface Brand {
+interface NamedOption {
   id: string
   name: string
 }
 
-interface Category {
-  id: string
-  name: string
+function settingsOptions(value: unknown): NamedOption[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((option, index) => {
+    if (!option || typeof option.name !== "string") return []
+    return [{
+      id: typeof option.id === "string" ? option.id : `${index}-${option.name}`,
+      name: option.name,
+    }]
+  })
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === "object" && "message" in error) return String(error.message)
+  return String(error)
 }
 
 export function Settings() {
-  const [brands, setBrands] = useState<Brand[]>([])
+  const [brands, setBrands] = useState<NamedOption[]>([])
   const [newBrand, setNewBrand] = useState("")
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<NamedOption[]>([])
   const [newCategory, setNewCategory] = useState("")
   const [validityDays, setValidityDays] = useState(30)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
+  const [loadError, setLoadError] = useState("")
+  const [saveError, setSaveError] = useState("")
+  const [entryError, setEntryError] = useState("")
+  const [notice, setNotice] = useState("")
 
   useEffect(() => {
-    loadSettings()
+    void loadSettings()
   }, [])
 
   const loadSettings = async () => {
     setLoading(true)
-    const settings = await fetchSettings()
-    if (settings.brands) setBrands(settings.brands)
-    if (settings.categories) setCategories(settings.categories)
-    if (settings.validityDays) setValidityDays(settings.validityDays)
-    setLoading(false)
+    setLoadError("")
+    try {
+      const settings = await fetchSettings()
+      setBrands(settingsOptions(settings.brands))
+      setCategories(settingsOptions(settings.categories))
+      const days = Number(settings.validityDays)
+      setValidityDays(Number.isInteger(days) && days > 0 ? days : 30)
+      setIsDirty(false)
+    } catch (error) {
+      setLoadError(errorMessage(error))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = async () => {
-    if (!Number.isInteger(validityDays) || validityDays < 1) { alert("Validity must be a positive whole number of days."); return }
+    setSaveError("")
+    setNotice("")
+    if (!Number.isInteger(validityDays) || validityDays < 1) {
+      setSaveError("Validity must be a positive whole number of days.")
+      return
+    }
+
+    const cleanBrands = brands.map(brand => ({ ...brand, name: brand.name.trim() }))
+    const cleanCategories = categories.map(category => ({ ...category, name: category.name.trim() }))
+    for (const [label, options] of [["Brand", cleanBrands], ["Category", cleanCategories]] as const) {
+      if (options.some(option => !option.name)) {
+        setSaveError(`${label} names cannot be blank.`)
+        return
+      }
+      const names = options.map(option => option.name.toLowerCase())
+      if (new Set(names).size !== names.length) {
+        setSaveError(`${label} names must be unique.`)
+        return
+      }
+    }
+
     setSaving(true)
-    const results = await Promise.all([
-      saveSetting("brands", brands),
-      saveSetting("categories", categories),
-      saveSetting("validityDays", validityDays),
-    ])
-    setSaving(false)
-    alert(results.every(Boolean) ? "Settings saved!" : "Some settings could not be saved. Please retry.")
+    try {
+      const entries = [
+        ["brands", cleanBrands],
+        ["categories", cleanCategories],
+        ["validityDays", validityDays],
+      ] as const
+      const results = await Promise.allSettled(entries.map(([key, value]) => saveSetting(key, value)))
+      const failures = results.flatMap((result, index) =>
+        result.status === "rejected" ? [`${entries[index][0]}: ${errorMessage(result.reason)}`] : [],
+      )
+      if (failures.length) {
+        setSaveError(`Some settings could not be saved. ${failures.join("; ")}`)
+        return
+      }
+      setBrands(cleanBrands)
+      setCategories(cleanCategories)
+      setIsDirty(false)
+      setNotice("Settings saved.")
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const addBrand = () => {
-    if (!newBrand.trim()) return
-    setBrands([...brands, { id: Date.now().toString(), name: newBrand.trim() }])
+  const makeOption = (name: string): NamedOption => ({ id: crypto.randomUUID(), name })
+
+  const addBrand = (event: React.FormEvent) => {
+    event.preventDefault()
+    const name = newBrand.trim()
+    if (!name) return
+    if (brands.some(brand => brand.name.trim().toLowerCase() === name.toLowerCase())) {
+      setEntryError("That brand already exists.")
+      return
+    }
+    setEntryError("")
+    setNotice("")
+    setBrands(current => [...current, makeOption(name)])
+    setIsDirty(true)
     setNewBrand("")
   }
 
   const removeBrand = (id: string) => {
-    setBrands(brands.filter((b) => b.id !== id))
+    setBrands(current => current.filter(brand => brand.id !== id))
+    setIsDirty(true)
+    setNotice("")
   }
 
-  const addCategory = () => {
-    if (!newCategory.trim()) return
-    setCategories([...categories, { id: Date.now().toString(), name: newCategory.trim() }])
+  const addCategory = (event: React.FormEvent) => {
+    event.preventDefault()
+    const name = newCategory.trim()
+    if (!name) return
+    if (categories.some(category => category.name.trim().toLowerCase() === name.toLowerCase())) {
+      setEntryError("That category already exists.")
+      return
+    }
+    setEntryError("")
+    setNotice("")
+    setCategories(current => [...current, makeOption(name)])
+    setIsDirty(true)
     setNewCategory("")
   }
 
   const removeCategory = (id: string) => {
-    setCategories(categories.filter((c) => c.id !== id))
+    setCategories(current => current.filter(category => category.id !== id))
+    setIsDirty(true)
+    setNotice("")
   }
 
   if (loading) {
     return <div className="p-4">Loading...</div>
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+          <p role="alert" className="text-sm text-red-500">Could not load settings: {loadError}</p>
+        </div>
+        <Button variant="outline" onClick={() => void loadSettings()}>Retry</Button>
+      </div>
+    )
   }
 
   return (
@@ -90,24 +185,38 @@ export function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <form onSubmit={addBrand} className="flex gap-2">
               <Input
+                aria-label="New brand name"
                 placeholder="New brand name"
                 value={newBrand}
-                onChange={(e) => setNewBrand(e.target.value)}
+                onChange={(event) => setNewBrand(event.target.value)}
               />
-              <Button onClick={addBrand}>Add</Button>
-            </div>
-            <div className="space-y-2">
-              {brands.map((brand) => (
+              <Button type="submit" disabled={saving}>Add</Button>
+            </form>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {brands.length === 0 && <p className="text-sm text-muted-foreground">No brands configured.</p>}
+              {brands.map((brand, index) => (
                 <div
                   key={brand.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                  className="flex items-center gap-2"
                 >
-                  <span className="text-sm">{brand.name}</span>
+                  <Input
+                    aria-label={`Brand ${index + 1}`}
+                    value={brand.name}
+                    disabled={saving}
+                    onChange={event => {
+                      setBrands(current => current.map(item => item.id === brand.id ? { ...item, name: event.target.value } : item))
+                      setIsDirty(true)
+                      setNotice("")
+                    }}
+                  />
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
+                    disabled={saving}
+                    aria-label={`Remove ${brand.name || "brand"}`}
                     onClick={() => removeBrand(brand.id)}
                   >
                     Remove
@@ -126,24 +235,38 @@ export function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <form onSubmit={addCategory} className="flex gap-2">
               <Input
+                aria-label="New category name"
                 placeholder="New category name"
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                onChange={(event) => setNewCategory(event.target.value)}
               />
-              <Button onClick={addCategory}>Add</Button>
-            </div>
-            <div className="space-y-2">
-              {categories.map((category) => (
+              <Button type="submit" disabled={saving}>Add</Button>
+            </form>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {categories.length === 0 && <p className="text-sm text-muted-foreground">No categories configured.</p>}
+              {categories.map((category, index) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                  className="flex items-center gap-2"
                 >
-                  <span className="text-sm">{category.name}</span>
+                  <Input
+                    aria-label={`Category ${index + 1}`}
+                    value={category.name}
+                    disabled={saving}
+                    onChange={event => {
+                      setCategories(current => current.map(item => item.id === category.id ? { ...item, name: event.target.value } : item))
+                      setIsDirty(true)
+                      setNotice("")
+                    }}
+                  />
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
+                    disabled={saving}
+                    aria-label={`Remove ${category.name || "category"}`}
                     onClick={() => removeCategory(category.id)}
                   >
                     Remove
@@ -165,19 +288,32 @@ export function Settings() {
             <div className="flex items-center gap-4">
               <Input
                 type="number"
+                min={1}
+                step={1}
                 value={validityDays}
-                onChange={(e) => setValidityDays(Number(e.target.value))}
+                disabled={saving}
+                onChange={(event) => {
+                  setValidityDays(Number(event.target.value))
+                  setIsDirty(true)
+                  setNotice("")
+                }}
                 className="w-32"
               />
               <span className="text-sm text-muted-foreground">
                 days from quote date
               </span>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Settings"}
-            </Button>
           </CardContent>
         </Card>
+      </div>
+
+      {entryError && <p role="alert" className="text-sm text-red-500">{entryError}</p>}
+      {saveError && <p role="alert" className="text-sm text-red-500">{saveError}</p>}
+      {notice && <p role="status" className="text-sm text-emerald-600">{notice}</p>}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving || !isDirty}>
+          {saving ? "Saving..." : "Save Settings"}
+        </Button>
       </div>
     </div>
   )

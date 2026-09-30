@@ -141,7 +141,10 @@ export function Upload() {
       setShowPreview(false)
     } catch (error) {
       console.error("Import error:", error)
-      alert("Failed to import records. Please try again.")
+      const message = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : error instanceof Error ? error.message : String(error)
+      alert(`Failed to import records: ${message}`)
     } finally {
       setIsProcessing(false)
     }

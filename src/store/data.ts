@@ -134,7 +134,7 @@ export async function fetchSettings() {
 
   if (error) {
     console.error("Error fetching settings:", error)
-    return {}
+    throw error
   }
 
   return data?.reduce((acc: Record<string, any>, row: any) => {
@@ -150,7 +150,7 @@ export async function saveSetting(key: string, value: any) {
 
   if (error) {
     console.error("Error saving setting:", error)
-    return false
+    throw error
   }
 
   return true
