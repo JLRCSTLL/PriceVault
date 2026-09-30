@@ -116,8 +116,16 @@ export function Upload() {
       const results = outcomes.map(result => result.status === "fulfilled" ? result.value : null)
       const successCount = results.filter((r) => r !== null).length
       if (successCount !== parsedRows.length) {
+        const failures = outcomes.flatMap((result, index) => {
+          if (result.status !== "rejected") return []
+          const row = parsedRows[index]
+          const message = result.reason instanceof Error ? result.reason.message : String(result.reason)
+          return [`${row.sheet}, row ${row.row}: ${message}`]
+        })
         setParsedRows(parsedRows.filter((_, index) => results[index] === null))
-        alert(`Imported ${successCount} records. ${parsedRows.length - successCount} failed. Failed rows remain available to retry.`)
+        const shownFailures = failures.slice(0, 5).join("\n")
+        const remainingFailures = failures.length > 5 ? `\n...and ${failures.length - 5} more.` : ""
+        alert(`Imported ${successCount} records. ${failures.length} failed. Failed rows remain available to retry.\n${shownFailures}${remainingFailures}`)
         return
       }
       alert(`Successfully imported ${successCount} records!`)

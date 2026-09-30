@@ -70,7 +70,7 @@ export async function createPriceRecord(record: Partial<PriceRecord>) {
 
   if (error) {
     console.error("Error creating price record:", error)
-    return null
+    throw error
   }
 
   return data
