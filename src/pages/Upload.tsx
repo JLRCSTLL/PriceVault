@@ -119,8 +119,15 @@ export function Upload() {
         const failures = outcomes.flatMap((result, index) => {
           if (result.status !== "rejected") return []
           const row = parsedRows[index]
-          const message = result.reason instanceof Error ? result.reason.message : String(result.reason)
-          return [`${row.sheet}, row ${row.row}: ${message}`]
+          const error = result.reason
+          const fields = error && typeof error === "object" ? error as Record<string, unknown> : {}
+          const message = typeof fields.message === "string"
+            ? fields.message
+            : error instanceof Error ? error.message : String(error)
+          const context = [fields.code, fields.details, fields.hint]
+            .filter((value): value is string => typeof value === "string" && value.length > 0)
+            .join(" | ")
+          return [`${row.sheet}, row ${row.row}: ${message}${context ? ` (${context})` : ""}`]
         })
         setParsedRows(parsedRows.filter((_, index) => results[index] === null))
         const shownFailures = failures.slice(0, 5).join("\n")
