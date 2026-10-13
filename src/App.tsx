@@ -5,6 +5,7 @@ import { PriceList } from "./pages/PriceList"
 import { Upload } from "./pages/Upload"
 import { RequestCart } from "./pages/RequestCart"
 import { Reports } from "./pages/Reports"
+import { Sales } from "./pages/Sales"
 import { GeneratedRequests } from "./pages/GeneratedRequests"
 import { Settings } from "./pages/Settings"
 import { Login } from "./pages/Login"
@@ -58,6 +59,9 @@ export default function App() {
           } />
           <Route path="reports" element={
             <ProtectedRoute><Reports /></ProtectedRoute>
+          } />
+          <Route path="sales" element={
+            <ProtectedRoute><Sales /></ProtectedRoute>
           } />
           <Route path="settings" element={
             <ProtectedRoute><Settings /></ProtectedRoute>
