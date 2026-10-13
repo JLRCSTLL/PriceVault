@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   FileText,
   BarChart,
+  TrendingUp,
   Settings,
   LogOut,
   Vault,
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Request Cart", href: "/cart", icon: ShoppingCart },
   { name: "Generated Requests", href: "/requests", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart },
+  { name: "Sales Status", href: "/sales", icon: TrendingUp },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -43,29 +45,30 @@ export function Layout() {
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-sidebar border-r border-border flex flex-col">
-        <div className="h-16 flex items-center px-6">
-          <Vault className="w-5 h-5 mr-2" />
-          <span className="font-semibold text-base tracking-tight">Price Vault</span>
+      <div className="w-14 md:w-64 shrink-0 bg-sidebar border-r border-border flex flex-col">
+        <div className="h-16 flex items-center px-4 md:px-6">
+          <Vault className="w-5 h-5 shrink-0 md:mr-2" />
+          <span className="sr-only md:not-sr-only font-semibold text-base tracking-tight">Price Vault</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-0.5 px-3">
+          <ul className="space-y-0.5 px-2 md:px-3">
             {navigation.map((item) => (
               <li key={item.name}>
                 <NavLink
                   to={item.href}
+                  title={item.name}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-none px-2 md:px-3 py-2 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-foreground text-background"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     )
                   }
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="sr-only md:not-sr-only">{item.name}</span>
                 </NavLink>
               </li>
             ))}
@@ -73,56 +76,57 @@ export function Layout() {
               <li>
                 <NavLink
                   to="/admin/users"
+                  title="User Management"
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-none px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-none px-2 md:px-3 py-2 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-foreground text-background"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted",
                     )
                   }
                 >
-                  <Users className="h-4 w-4" />
-                  User Management
+                  <Users className="h-4 w-4 shrink-0" />
+                  <span className="sr-only md:not-sr-only">User Management</span>
                 </NavLink>
               </li>
             )}
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-border space-y-2">
+        <div className="p-2 md:p-4 border-t border-border space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start rounded-none hover:bg-muted"
+            className="w-full justify-start px-2 md:px-4 rounded-none hover:bg-muted"
             onClick={toggleTheme}
           >
             {resolvedTheme === "dark" ? (
               <>
-                <Sun className="h-4 w-4 mr-2" />
-                Light Mode
+                <Sun className="h-4 w-4 shrink-0 md:mr-2" />
+                <span className="sr-only md:not-sr-only">Light Mode</span>
               </>
             ) : (
               <>
-                <Moon className="h-4 w-4 mr-2" />
-                Dark Mode
+                <Moon className="h-4 w-4 shrink-0 md:mr-2" />
+                <span className="sr-only md:not-sr-only">Dark Mode</span>
               </>
             )}
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start rounded-none hover:bg-muted"
+            className="w-full justify-start px-2 md:px-4 rounded-none hover:bg-muted"
             onClick={signOut}
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
+            <LogOut className="h-4 w-4 shrink-0 md:mr-2" />
+            <span className="sr-only md:not-sr-only">Logout</span>
           </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="min-w-0 flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
+        <header className="h-14 bg-background border-b border-border flex items-center justify-between px-3 md:px-6 shrink-0">
           <div className="flex items-center gap-3">
             <h1 className="font-medium text-base text-foreground">
               {profile?.full_name || user?.email || "User"}
@@ -140,7 +144,7 @@ export function Layout() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6">
           <Outlet />
         </div>
       </main>
