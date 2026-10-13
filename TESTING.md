@@ -1,3 +1,38 @@
+# Sales Status (2026-10-13)
+
+The `/sales` page follows the sales tracker columns: reporting month, account executive, date, PO number, sales type, account, scope of work, and amount in PHP. Reporting year/month are stored independently of the optional date. The page includes monthly and grand totals, combined filters, Excel export, and administrator record management.
+
+## Setup
+
+1. Apply `supabase/migrations/20260930_user_management_security.sql` if it has not already been applied.
+2. Apply `supabase/migrations/20261013_sales_records.sql` to the target Supabase project. Fresh installations can use the updated `supabase/schema.sql`.
+3. Deploy the application and open **Sales Status**. Approved users can view and export; approved administrators can add, edit, delete, and import sales.
+4. To load an existing tracker, choose **Import Excel**, select its reporting year, and review the preview before importing. An optional `YEAR` column overrides the selected year for individual rows. The source workbook is never uploaded to storage; only the reviewed sales records are saved.
+
+Use these headers: `MONTH`, `AE`, `Date`, `P.O. No.`, `SALES TYPE`, `ACCOUNT NAME`, `TYPE / SCOPE OF WORK`, and `AMOUNT (PHP)`. Excel date cells and `YYYY-MM-DD` text are supported; a blank date or PO is allowed. Imports accept `.xlsx` and `.xls`, up to 5 MB and 1,000 sales per file. Correct any reported invalid rows before importing.
+
+Subtotal and grand-total rows are skipped and totals are recalculated. Exact matching sales are skipped in the preview, including duplicates within the file. A unique import fingerprint also protects retries after a lost response. An imported record retains its source fingerprint when edited, so importing the original file again will not overwrite the edit. Distinct projects sharing a PO remain separate. Names and scope text are preserved; spelling variants are not automatically merged.
+
+The new migration creates the sales table and restricts it with row-level security. It has been exercised in an isolated PostgreSQL-compatible PGlite database, including repeated application, invalid amounts/months, duplicate imports, administrator CRUD, approved-user reads, and denied anonymous/pending/rejected access. It has **not** been applied to the live Supabase project. Existing policies on unrelated tables are unchanged.
+
+## Validation
+
+- `pnpm typecheck` and `pnpm build` pass. The existing Vite configuration and bundle-size warnings remain.
+- `pnpm test` covers the sales parser, date systems, reporting-period preservation, validation, duplicate matching, combined filters, currency totals, and Excel export/reimport, alongside existing price tests.
+- The supplied workbook is checked locally without being committed. It produces 10 sales, skips four subtotal rows, preserves one missing date, and reconciles to the workbook's cached monthly subtotals.
+- Browser checks use an isolated backend with synthetic data: navigation, combined filters, create/edit, failed-write retry, import preview, repeat import, export, approved-viewer controls, 1,001-row loading, empty/missing-table states, and a 390px mobile layout. The new sidebar collapses to icons on small screens and wide registers scroll horizontally.
+
+```powershell
+pnpm typecheck
+pnpm build
+pnpm test
+# Optional local reconciliation against the supplied tracker:
+$env:PRICEVAULT_SALES_SAMPLE = 'C:/path/to/AV project.xlsx'
+pnpm test
+```
+
+Before production use, apply the migration and verify sign-in, role enforcement, and sales persistence against the actual target project. No live sales were inserted or changed during development.
+
 # Verification on 2026-09-29
 
 ## Completed
